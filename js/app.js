@@ -1245,9 +1245,7 @@ function openReceiptModal(order) {
 
   content.innerHTML = `
     <div class="text-center pb-4 border-b border-dashed border-slate-200">
-      <div class="w-12 h-12 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-2 font-bold text-xl">
-        <i data-lucide="check-circle-2" class="w-7 h-7"></i>
-      </div>
+      <img src="assets/logo.jpg" alt="PintasFood" class="h-14 w-auto object-contain mx-auto mb-2 rounded-xl" />
       <h3 class="font-bold text-slate-800 text-lg sm:text-xl">${state.storeConfig.storeName}</h3>
       <p class="text-xs text-slate-500">${state.storeConfig.storeAddress}</p>
       <div class="mt-2 inline-block px-3 py-1 bg-emerald-100 text-emerald-800 font-bold text-xs rounded-full">

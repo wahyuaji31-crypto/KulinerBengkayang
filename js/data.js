@@ -226,8 +226,8 @@ const DEFAULT_MENU_ITEMS = [
 
 // Konfigurasi Default Toko
 const DEFAULT_STORE_CONFIG = {
-  storeName: "Kuliner Bengkayang",
-  tagline: "Cita Rasa Otentik, Nikmat & Langsung Diantar ke Rumah Anda",
+  storeName: "PintasFood Bengkayang",
+  tagline: "Pesan Makan Cepat | Bengkayang - Cita Rasa Otentik, Nikmat & Langsung Diantar ke Rumah Anda",
   whatsappNumber: "6281234567890", // Ganti dengan nomor WA Toko
   storeAddress: "Jl. Sanggau Ledo No. 45, Bengkayang, Kalimantan Barat",
   openHours: "09:00 - 22:00 WIB",
@@ -235,9 +235,9 @@ const DEFAULT_STORE_CONFIG = {
   minFreeDelivery: 100000,
   qrisImageUrl: "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=00020101021126580014ID.LINKAJA.WWW011893600014000000000002081234567851450014ID.DOKU.WWW0215000000000000000520458125802ID5918KULINER BENGKAYANG6010BENGKAYANG61057921162230119KULINERBENGKAYANG016304D1B8",
   bankAccounts: [
-    { bank: "BCA", number: "8935 1234 5678", holder: "Kuliner Bengkayang" },
-    { bank: "BRI", number: "0012 0102 3456 531", holder: "Kuliner Bengkayang" },
-    { bank: "Mandiri", number: "1440 0192 8374 1", holder: "Kuliner Bengkayang" }
+    { bank: "BCA", number: "8935 1234 5678", holder: "PintasFood Bengkayang" },
+    { bank: "BRI", number: "0012 0102 3456 531", holder: "PintasFood Bengkayang" },
+    { bank: "Mandiri", number: "1440 0192 8374 1", holder: "PintasFood Bengkayang" }
   ],
   vouchers: {
     "DISKON10": { type: "percent", value: 10, minSpend: 30000, desc: "Diskon 10% minimal belanja Rp 30.000" },
