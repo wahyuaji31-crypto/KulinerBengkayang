@@ -178,14 +178,30 @@ function handleLogout() {
 
 // Tampilan Switch
 function showLoginView() {
-  document.getElementById("loginSection")?.classList.remove("hidden");
-  document.getElementById("dashboardSection")?.classList.add("hidden");
+  const loginSec = document.getElementById("loginSection");
+  const dashSec = document.getElementById("dashboardSection");
+  if (loginSec) {
+    loginSec.classList.remove("hidden");
+    loginSec.style.display = "flex";
+  }
+  if (dashSec) {
+    dashSec.classList.add("hidden");
+    dashSec.style.display = "none";
+  }
   if (window.lucide) window.lucide.createIcons();
 }
 
 function showDashboardView() {
-  document.getElementById("loginSection")?.classList.add("hidden");
-  document.getElementById("dashboardSection")?.classList.remove("hidden");
+  const loginSec = document.getElementById("loginSection");
+  const dashSec = document.getElementById("dashboardSection");
+  if (loginSec) {
+    loginSec.classList.add("hidden");
+    loginSec.style.display = "none";
+  }
+  if (dashSec) {
+    dashSec.classList.remove("hidden");
+    dashSec.style.display = "flex";
+  }
   try {
     loadAdminData();
     switchTab(adminState.activeTab || "dashboard");
@@ -194,27 +210,28 @@ function showDashboardView() {
   }
 }
 
-
 // Load Data Menu & Pesanan
 function loadAdminData() {
   // Menu
   try {
     const customMenu = localStorage.getItem("kb_custom_menu");
     if (customMenu) {
-      adminState.menu = JSON.parse(customMenu);
+      const parsed = JSON.parse(customMenu);
+      adminState.menu = Array.isArray(parsed) ? parsed : (typeof DEFAULT_MENU_ITEMS !== "undefined" ? [...DEFAULT_MENU_ITEMS] : []);
     } else if (typeof DEFAULT_MENU_ITEMS !== "undefined") {
       adminState.menu = [...DEFAULT_MENU_ITEMS];
     } else {
       adminState.menu = [];
     }
   } catch (e) {
-    adminState.menu = [];
+    adminState.menu = typeof DEFAULT_MENU_ITEMS !== "undefined" ? [...DEFAULT_MENU_ITEMS] : [];
   }
 
   // Orders
   try {
     const orders = localStorage.getItem("kb_orders_history");
-    adminState.orders = orders ? JSON.parse(orders) : [];
+    const parsed = orders ? JSON.parse(orders) : [];
+    adminState.orders = Array.isArray(parsed) ? parsed : [];
   } catch (e) {
     adminState.orders = [];
   }
@@ -237,7 +254,8 @@ function loadAdminData() {
   try {
     const couriers = localStorage.getItem("kb_couriers_list");
     if (couriers) {
-      adminState.couriers = JSON.parse(couriers);
+      const parsed = JSON.parse(couriers);
+      adminState.couriers = Array.isArray(parsed) ? parsed : [];
     } else {
       adminState.couriers = [
         { id: "cr-01", name: "Budi Santoso", phone: "081234567891", vehicle: "Honda Beat • KB 4122 LK", active: true },
@@ -250,6 +268,7 @@ function loadAdminData() {
     adminState.couriers = [];
   }
 }
+
 
 // Sinkronisasi Live Data Admin dari Cloud Database
 async function syncAdminDataFromCloud(showLog = true) {
