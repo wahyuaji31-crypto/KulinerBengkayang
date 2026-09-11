@@ -30,7 +30,7 @@ function formatRupiah(number) {
 }
 
 // Inisialisasi Halaman Admin
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   initAdminAuth();
   loadAdminData();
   
@@ -39,6 +39,16 @@ document.addEventListener("DOMContentLoaded", () => {
   } else {
     showLoginView();
   }
+
+  // Sinkronisasi data live dari Cloud Database
+  await syncAdminDataFromCloud();
+
+  // Background Auto-Sync data pesanan & menu setiap 8 detik
+  setInterval(async () => {
+    if (adminState.isAuthenticated) {
+      await syncAdminDataFromCloud(false);
+    }
+  }, 8000);
 
   if (window.lucide) {
     window.lucide.createIcons();
@@ -136,7 +146,7 @@ function loadAdminData() {
     adminState.orders = [];
   }
 
-    // Store Config
+  // Store Config
   try {
     const config = localStorage.getItem("kb_store_config");
     if (config) {
@@ -167,6 +177,59 @@ function loadAdminData() {
     adminState.couriers = [];
   }
 }
+
+// Sinkronisasi Live Data Admin dari Cloud Database
+async function syncAdminDataFromCloud(showLog = true) {
+  if (typeof CloudSync === "undefined") return;
+
+  try {
+    // 1. Sync Menu dari Cloud
+    const cloudMenu = await CloudSync.get(CloudSync.KEYS.MENU, null);
+    if (cloudMenu && Array.isArray(cloudMenu) && cloudMenu.length > 0) {
+      const isDiff = JSON.stringify(adminState.menu) !== JSON.stringify(cloudMenu);
+      if (isDiff) {
+        adminState.menu = cloudMenu;
+        localStorage.setItem("kb_custom_menu", JSON.stringify(cloudMenu));
+        if (adminState.activeTab === "menu") renderAdminMenuList();
+        if (adminState.activeTab === "dashboard") renderDashboardStats();
+      }
+    }
+
+    // 2. Sync Pesanan dari Cloud
+    const cloudOrders = await CloudSync.get(CloudSync.KEYS.ORDERS, null);
+    if (cloudOrders && Array.isArray(cloudOrders)) {
+      const isOrdersDiff = JSON.stringify(adminState.orders) !== JSON.stringify(cloudOrders);
+      if (isOrdersDiff) {
+        adminState.orders = cloudOrders;
+        localStorage.setItem("kb_orders_history", JSON.stringify(cloudOrders));
+        if (adminState.activeTab === "orders") renderAdminOrdersList();
+        if (adminState.activeTab === "dashboard") renderDashboardStats();
+      }
+    }
+
+    // 3. Sync Couriers dari Cloud
+    const cloudCouriers = await CloudSync.get(CloudSync.KEYS.COURIERS, null);
+    if (cloudCouriers && Array.isArray(cloudCouriers) && cloudCouriers.length > 0) {
+      const isCouriersDiff = JSON.stringify(adminState.couriers) !== JSON.stringify(cloudCouriers);
+      if (isCouriersDiff) {
+        adminState.couriers = cloudCouriers;
+        localStorage.setItem("kb_couriers_list", JSON.stringify(cloudCouriers));
+        if (adminState.activeTab === "couriers") renderAdminCouriersList();
+      }
+    }
+
+    // 4. Sync Settings dari Cloud
+    const cloudSettings = await CloudSync.get(CloudSync.KEYS.SETTINGS, null);
+    if (cloudSettings && typeof cloudSettings === "object") {
+      adminState.storeConfig = { ...adminState.storeConfig, ...cloudSettings };
+      localStorage.setItem("kb_store_config", JSON.stringify(adminState.storeConfig));
+      if (adminState.activeTab === "settings") loadStoreSettingsToForm();
+    }
+  } catch (err) {
+    console.warn("[CloudSync Admin] Background sync error:", err);
+  }
+}
+
 
 // Navigasi Tab Dashboard
 function switchTab(tabId) {
@@ -420,21 +483,25 @@ function deleteMenuItem(menuId) {
     adminState.menu = adminState.menu.filter(m => m.id !== menuId);
     saveCustomMenu();
     renderAdminMenuList();
-    showToast(`Menu "${item.name}" telah dihapus`, "info");
-  }
-}
-
-function resetMenuToDefault() {
+    showToast(`Menu "${item.name}" telah dihapus`, "info"function resetMenuToDefault() {
   if (confirm("Apakah Anda ingin mereset seluruh daftar menu kembali ke menu bawaan?")) {
     localStorage.removeItem("kb_custom_menu");
-    loadAdminData();
+    if (typeof DEFAULT_MENU_ITEMS !== "undefined") {
+      adminState.menu = [...DEFAULT_MENU_ITEMS];
+      saveCustomMenu();
+    }
     renderAdminMenuList();
-    showToast("Menu berhasil direset ke pengaturan bawaan", "success");
+    showToast("Menu berhasil direset ke pengaturan bawaan di semua perangkat", "success");
   }
 }
 
-function saveCustomMenu() {
+async function saveCustomMenu() {
   localStorage.setItem("kb_custom_menu", JSON.stringify(adminState.menu));
+  
+  // Kirim perubahan menu ke Cloud agar langsung tampil di semua HP pembeli
+  if (typeof CloudSync !== "undefined") {
+    await CloudSync.set(CloudSync.KEYS.MENU, adminState.menu);
+  }
 }
 
 // ==================== 3. TAB RIWAYAT PESANAN ====================
@@ -476,7 +543,7 @@ function renderAdminOrdersList() {
           </select>
 
           <button 
-            onclick="deleteOrderHistory(${idx})"
+            onclick="deleteOrderHistory(${idx})" 
             title="Hapus Pesanan"
             class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition">
             <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -510,29 +577,41 @@ function renderAdminOrdersList() {
   if (window.lucide) window.lucide.createIcons();
 }
 
-function updateOrderStatus(orderIndex, newStatus) {
+async function updateOrderStatus(orderIndex, newStatus) {
   if (adminState.orders[orderIndex]) {
     adminState.orders[orderIndex].status = newStatus;
     localStorage.setItem("kb_orders_history", JSON.stringify(adminState.orders));
+    if (typeof CloudSync !== "undefined") {
+      await CloudSync.set(CloudSync.KEYS.ORDERS, adminState.orders);
+    }
     showToast(`Status pesanan #${adminState.orders[orderIndex].invoiceId} diubah menjadi "${newStatus}"`, "success");
   }
 }
 
-function deleteOrderHistory(orderIndex) {
+async function deleteOrderHistory(orderIndex) {
   if (confirm("Apakah Anda yakin ingin menghapus data riwayat pesanan ini?")) {
     adminState.orders.splice(orderIndex, 1);
     localStorage.setItem("kb_orders_history", JSON.stringify(adminState.orders));
+    if (typeof CloudSync !== "undefined") {
+      await CloudSync.set(CloudSync.KEYS.ORDERS, adminState.orders);
+    }
     renderAdminOrdersList();
     showToast("Pesanan berhasil dihapus", "info");
   }
 }
 
-function clearAllOrders() {
+async function clearAllOrders() {
   if (confirm("Peringatan: Apakah Anda yakin ingin mengosongkan SEMUA riwayat pesanan?")) {
     adminState.orders = [];
     localStorage.removeItem("kb_orders_history");
+    if (typeof CloudSync !== "undefined") {
+      await CloudSync.set(CloudSync.KEYS.ORDERS, []);
+    }
     renderAdminOrdersList();
     showToast("Seluruh riwayat pesanan telah dibersihkan", "info");
+  }
+}
+"info");
   }
 }
 
@@ -617,7 +696,7 @@ function closeCourierModal() {
   document.body.classList.remove("overflow-hidden");
 }
 
-function saveCourierFromForm(e) {
+async function saveCourierFromForm(e) {
   e.preventDefault();
   const name = document.getElementById("formCourierName").value.trim();
   const phone = document.getElementById("formCourierPhone").value.trim();
@@ -638,27 +717,36 @@ function saveCourierFromForm(e) {
 
   adminState.couriers.push(newCourier);
   localStorage.setItem("kb_couriers_list", JSON.stringify(adminState.couriers));
+  if (typeof CloudSync !== "undefined") {
+    await CloudSync.set(CloudSync.KEYS.COURIERS, adminState.couriers);
+  }
   renderAdminCouriersList();
   closeCourierModal();
-  showToast(`Kurir "${name}" berhasil didaftarkan!`, "success");
+  showToast(`Kurir "${name}" berhasil didaftarkan di semua perangkat!`, "success");
 }
 
-function toggleCourierActive(index) {
+async function toggleCourierActive(index) {
   if (adminState.couriers[index]) {
     adminState.couriers[index].active = !adminState.couriers[index].active;
     localStorage.setItem("kb_couriers_list", JSON.stringify(adminState.couriers));
+    if (typeof CloudSync !== "undefined") {
+      await CloudSync.set(CloudSync.KEYS.COURIERS, adminState.couriers);
+    }
     renderAdminCouriersList();
     showToast(`Status kurir diperbarui`, "info");
   }
 }
 
-function deleteCourier(index) {
+async function deleteCourier(index) {
   const c = adminState.couriers[index];
   if (!c) return;
 
   if (confirm(`Apakah Anda yakin ingin menghapus kurir "${c.name}"?`)) {
     adminState.couriers.splice(index, 1);
     localStorage.setItem("kb_couriers_list", JSON.stringify(adminState.couriers));
+    if (typeof CloudSync !== "undefined") {
+      await CloudSync.set(CloudSync.KEYS.COURIERS, adminState.couriers);
+    }
     renderAdminCouriersList();
     showToast(`Kurir "${c.name}" telah dihapus`, "info");
   }
@@ -666,7 +754,6 @@ function deleteCourier(index) {
 
 // ==================== 4. TAB PENGATURAN TOKO ====================
 function loadStoreSettingsToForm() {
-
   const cfg = adminState.storeConfig;
   document.getElementById("setStoreName").value = cfg.storeName || "";
   document.getElementById("setStoreTagline").value = cfg.tagline || "";
@@ -678,7 +765,7 @@ function loadStoreSettingsToForm() {
   document.getElementById("setStoreQris").value = cfg.qrisImageUrl || "";
 }
 
-function saveStoreSettingsFromForm(e) {
+async function saveStoreSettingsFromForm(e) {
   e.preventDefault();
   const storeName = document.getElementById("setStoreName").value.trim();
   const tagline = document.getElementById("setStoreTagline").value.trim();
@@ -707,8 +794,12 @@ function saveStoreSettingsFromForm(e) {
   };
 
   localStorage.setItem("kb_store_config", JSON.stringify(adminState.storeConfig));
-  showToast("Pengaturan toko berhasil disimpan!", "success");
+  if (typeof CloudSync !== "undefined") {
+    await CloudSync.set(CloudSync.KEYS.SETTINGS, adminState.storeConfig);
+  }
+  showToast("Pengaturan toko berhasil disimpan ke Cloud di semua perangkat!", "success");
 }
+
 
 // ==================== 5. TAB KEAMANAN ADMIN ====================
 function loadSecurityForm() {

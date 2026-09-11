@@ -38,7 +38,7 @@ function formatRupiah(number) {
 }
 
 // Inisialisasi Saat Load
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   loadCouriersData();
   loadOrdersData();
   initDriverMap();
@@ -46,14 +46,45 @@ document.addEventListener("DOMContentLoaded", () => {
   renderDriverHeader();
   renderNearbyOrders();
 
-  // Refresh otomatis data pesanan setiap 15 detik
-  setInterval(() => {
-    loadOrdersData();
-    renderNearbyOrders();
-  }, 15000);
+  // Sinkronisasi data live dari Cloud Database
+  await syncDriverDataFromCloud();
+
+  // Refresh otomatis data pesanan & kurir dari Cloud setiap 8 detik
+  setInterval(async () => {
+    await syncDriverDataFromCloud(false);
+  }, 8000);
 
   if (window.lucide) window.lucide.createIcons();
 });
+
+// Sinkronisasi Live Data Kurir & Orders dari Cloud
+async function syncDriverDataFromCloud(showLog = true) {
+  if (typeof CloudSync === "undefined") return;
+
+  try {
+    // 1. Sync Orders dari Cloud
+    const cloudOrders = await CloudSync.get(CloudSync.KEYS.ORDERS, null);
+    if (cloudOrders && Array.isArray(cloudOrders)) {
+      const isDiff = JSON.stringify(driverState.orders) !== JSON.stringify(cloudOrders);
+      if (isDiff) {
+        driverState.orders = cloudOrders;
+        localStorage.setItem("kb_orders_history", JSON.stringify(cloudOrders));
+        renderNearbyOrders();
+        if (showLog) console.log("[CloudSync Driver] Pesanan baru berhasil disinkronkan dari Cloud!");
+      }
+    }
+
+    // 2. Sync Couriers dari Cloud
+    const cloudCouriers = await CloudSync.get(CloudSync.KEYS.COURIERS, null);
+    if (cloudCouriers && Array.isArray(cloudCouriers) && cloudCouriers.length > 0) {
+      driverState.couriers = cloudCouriers;
+      localStorage.setItem("kb_couriers_list", JSON.stringify(cloudCouriers));
+    }
+  } catch (err) {
+    console.warn("[CloudSync Driver] Sync error:", err);
+  }
+}
+
 
 // Load Kurir Toko
 function loadCouriersData() {
@@ -407,16 +438,23 @@ function renderNearbyOrders() {
 }
 
 // Update Status Pesanan oleh Kurir
-function updateOrderCourierStatus(invoiceId, newStatus) {
+async function updateOrderCourierStatus(invoiceId, newStatus) {
   const idx = driverState.orders.findIndex(o => o.invoiceId === invoiceId);
   if (idx > -1) {
     driverState.orders[idx].status = newStatus;
     driverState.orders[idx].assignedCourier = driverState.currentCourier ? driverState.currentCourier.name : "Kurir Toko";
     localStorage.setItem("kb_orders_history", JSON.stringify(driverState.orders));
+    
+    // Sinkronkan ke Cloud agar admin dan pembeli langsung melihat update status secara live
+    if (typeof CloudSync !== "undefined") {
+      await CloudSync.set(CloudSync.KEYS.ORDERS, driverState.orders);
+    }
+    
     renderNearbyOrders();
     showToast(`Status pesanan #${invoiceId} diubah menjadi "${newStatus}"`, "success");
   }
 }
+
 
 // Modal Switch Driver
 function openSwitchDriverModal() {

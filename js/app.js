@@ -15,10 +15,10 @@ const state = {
 };
 
 // Inisialisasi Aplikasi
-document.addEventListener("DOMContentLoaded", () => {
-  loadStoreConfig();
+document.addEventListener("DOMContentLoaded", async () => {
+  loadStoreConfigLocal();
   loadCart();
-  loadMenuData();
+  loadMenuDataLocal();
   initEventListeners();
   renderStoreInfo();
   renderCategoryTabs();
@@ -28,6 +28,14 @@ document.addEventListener("DOMContentLoaded", () => {
   if (window.lucide) {
     window.lucide.createIcons();
   }
+
+  // Sinkronisasi data live dari Cloud Database
+  await syncDataFromCloud();
+
+  // Background Auto-Sync setiap 8 detik agar update admin langsung tampil tanpa reload
+  setInterval(async () => {
+    await syncDataFromCloud(false);
+  }, 8000);
 });
 
 // Format Rupiah
@@ -46,7 +54,7 @@ function formatNumber(number) {
 }
 
 // Simpan & Ambil Konfigurasi Toko
-function loadStoreConfig() {
+function loadStoreConfigLocal() {
   const savedConfig = localStorage.getItem("kb_store_config");
   if (savedConfig) {
     try {
@@ -59,11 +67,16 @@ function loadStoreConfig() {
   }
 }
 
-function saveStoreConfig(newConfig) {
+async function saveStoreConfig(newConfig) {
   state.storeConfig = { ...state.storeConfig, ...newConfig };
   localStorage.setItem("kb_store_config", JSON.stringify(state.storeConfig));
   renderStoreInfo();
-  showToast("Pengaturan toko berhasil diperbarui!", "success");
+  
+  // Kirim update ke Cloud agar langsung tersinkron ke semua user
+  if (typeof CloudSync !== "undefined") {
+    await CloudSync.set(CloudSync.KEYS.SETTINGS, state.storeConfig);
+  }
+  showToast("Pengaturan toko berhasil diperbarui di semua perangkat!", "success");
 }
 
 // Simpan & Ambil Keranjang
@@ -83,8 +96,8 @@ function saveCart() {
   updateCartUI();
 }
 
-// Load Menu
-function loadMenuData() {
+// Load Menu Lokal Cepat
+function loadMenuDataLocal() {
   const savedMenu = localStorage.getItem("kb_custom_menu");
   if (savedMenu) {
     try {
@@ -96,6 +109,39 @@ function loadMenuData() {
     state.menu = [...DEFAULT_MENU_ITEMS];
   }
 }
+
+// Sinkronisasi Live dari Cloud Database
+async function syncDataFromCloud(showLog = true) {
+  if (typeof CloudSync === "undefined") return;
+
+  try {
+    // 1. Sync Menu
+    const cloudMenu = await CloudSync.get(CloudSync.KEYS.MENU, null);
+    if (cloudMenu && Array.isArray(cloudMenu) && cloudMenu.length > 0) {
+      const menuChanged = JSON.stringify(state.menu) !== JSON.stringify(cloudMenu);
+      if (menuChanged) {
+        state.menu = cloudMenu;
+        localStorage.setItem("kb_custom_menu", JSON.stringify(cloudMenu));
+        renderMenu();
+        if (showLog) console.log("[CloudSync] Menu makanan terbaru berhasil disinkronkan dari Cloud!");
+      }
+    }
+
+    // 2. Sync Store Config
+    const cloudConfig = await CloudSync.get(CloudSync.KEYS.SETTINGS, null);
+    if (cloudConfig && typeof cloudConfig === "object") {
+      const configChanged = JSON.stringify(state.storeConfig) !== JSON.stringify(cloudConfig);
+      if (configChanged) {
+        state.storeConfig = { ...state.storeConfig, ...cloudConfig };
+        localStorage.setItem("kb_store_config", JSON.stringify(state.storeConfig));
+        renderStoreInfo();
+      }
+    }
+  } catch (err) {
+    console.warn("[CloudSync] Background sync error:", err);
+  }
+}
+
 
 // Render Info Toko ke Header & Footer
 function renderStoreInfo() {
@@ -1029,14 +1075,20 @@ function processCheckout(actionType) {
     assignedCourier: null
   };
 
-  // Simpan ke riwayat pesanan toko (untuk dashboard admin & kurir)
+  // Simpan ke riwayat pesanan toko (untuk dashboard admin & kurir lintas device)
   try {
     const existingOrders = JSON.parse(localStorage.getItem("kb_orders_history") || "[]");
     existingOrders.unshift(orderData);
     localStorage.setItem("kb_orders_history", JSON.stringify(existingOrders));
+
+    // Sinkronkan ke Cloud agar admin dan kurir di perangkat lain langsung menerima notifikasi
+    if (typeof CloudSync !== "undefined") {
+      CloudSync.set(CloudSync.KEYS.ORDERS, existingOrders);
+    }
   } catch (e) {
     console.error("Gagal mencatat riwayat pesanan:", e);
   }
+
 
   if (actionType === "whatsapp") {
     sendOrderViaWhatsApp(orderData);
