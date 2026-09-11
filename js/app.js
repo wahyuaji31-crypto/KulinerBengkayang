@@ -25,6 +25,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   renderMenu();
   updateCartUI();
   
+  // Dengarkan siaran real-time update dari Admin (0ms latency antar tab)
+  if (typeof CloudSync !== "undefined" && CloudSync.onUpdate) {
+    CloudSync.onUpdate((data) => {
+      if (data.key === CloudSync.KEYS.MENU && Array.isArray(data.value)) {
+        state.menu = data.value;
+        localStorage.setItem("kb_custom_menu", JSON.stringify(data.value));
+        renderMenu();
+        console.log("[CloudSync Live] Menu makanan langsung diperbarui!");
+      } else if (data.key === CloudSync.KEYS.SETTINGS && data.value) {
+        state.storeConfig = { ...state.storeConfig, ...data.value };
+        localStorage.setItem("kb_store_config", JSON.stringify(state.storeConfig));
+        renderStoreInfo();
+      }
+    });
+  }
+
   if (window.lucide) {
     window.lucide.createIcons();
   }
@@ -32,11 +48,42 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Sinkronisasi data live dari Cloud Database
   await syncDataFromCloud();
 
-  // Background Auto-Sync setiap 8 detik agar update admin langsung tampil tanpa reload
+  // Background Auto-Sync setiap 4 detik agar update admin langsung tampil di HP pembeli
   setInterval(async () => {
     await syncDataFromCloud(false);
-  }, 8000);
+  }, 4000);
 });
+
+// Helper Normalisasi Kategori Menu
+function normalizeCategory(cat) {
+  if (!cat) return "makanan";
+  const c = String(cat).toLowerCase().trim();
+  if (
+    c === "cemilan" ||
+    c === "camilan" ||
+    c === "snack" ||
+    c === "kudapan" ||
+    c === "makanan ringan" ||
+    c === "makanan_ringan" ||
+    c.includes("ringan") ||
+    c.includes("cemil") ||
+    c.includes("camil") ||
+    c.includes("snack") ||
+    c.includes("kudapan")
+  ) {
+    return "cemilan";
+  }
+  if (c === "minuman" || c.includes("minum") || c.includes("drink") || c.includes("jus") || c.includes("es ")) {
+    return "minuman";
+  }
+  if (c === "paket" || c.includes("paket") || c.includes("combo") || c.includes("hemat")) {
+    return "paket";
+  }
+  if (c === "makanan" || c.includes("makan") || c.includes("berat") || c.includes("lauk")) {
+    return "makanan";
+  }
+  return c;
+}
 
 // Format Rupiah
 function formatRupiah(number) {
@@ -129,7 +176,7 @@ async function syncDataFromCloud(showLog = true) {
 
     // 2. Sync Store Config
     const cloudConfig = await CloudSync.get(CloudSync.KEYS.SETTINGS, null);
-    if (cloudConfig && typeof cloudConfig === "object") {
+    if (cloudConfig && typeof cloudConfig === "object" && Object.keys(cloudConfig).length > 0) {
       const configChanged = JSON.stringify(state.storeConfig) !== JSON.stringify(cloudConfig);
       if (configChanged) {
         state.storeConfig = { ...state.storeConfig, ...cloudConfig };
@@ -169,7 +216,7 @@ function renderStoreInfo() {
 const CATEGORIES = [
   { id: "all", name: "Semua Menu", icon: "utensils" },
   { id: "makanan", name: "Makanan Berat", icon: "soup" },
-  { id: "cemilan", name: "Cemilan & Kudapan", icon: "cookie" },
+  { id: "cemilan", name: "Makanan Ringan / Cemilan", icon: "cookie" },
   { id: "minuman", name: "Minuman Segar", icon: "cup-soda" },
   { id: "paket", name: "Paket Hemat", icon: "sparkles" }
 ];
@@ -211,7 +258,8 @@ function renderMenu() {
   if (!menuContainer) return;
 
   let filtered = state.menu.filter(item => {
-    const matchesCat = state.activeCategory === "all" || item.category === state.activeCategory;
+    const itemNorm = normalizeCategory(item.category);
+    const matchesCat = state.activeCategory === "all" || itemNorm === state.activeCategory || item.category === state.activeCategory;
     const matchesQuery = item.name.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
                          item.description.toLowerCase().includes(state.searchQuery.toLowerCase());
     return matchesCat && matchesQuery;

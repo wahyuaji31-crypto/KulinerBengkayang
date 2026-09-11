@@ -40,19 +40,31 @@ document.addEventListener("DOMContentLoaded", async () => {
     showLoginView();
   }
 
-  // Sinkronisasi data live dari Cloud Database
-  await syncAdminDataFromCloud();
-
-  // Background Auto-Sync data pesanan & menu setiap 8 detik
-  setInterval(async () => {
-    if (adminState.isAuthenticated) {
-      await syncAdminDataFromCloud(false);
-    }
-  }, 8000);
+  // Dengarkan siaran real-time update pesanan baru dari website pengunjung (0ms)
+  if (typeof CloudSync !== "undefined" && CloudSync.onUpdate) {
+    CloudSync.onUpdate((data) => {
+      if (data.key === CloudSync.KEYS.ORDERS && Array.isArray(data.value)) {
+        adminState.orders = data.value;
+        localStorage.setItem("kb_orders_history", JSON.stringify(data.value));
+        if (adminState.activeTab === "orders") renderAdminOrdersList();
+        if (adminState.activeTab === "dashboard") renderDashboardStats();
+      }
+    });
+  }
 
   if (window.lucide) {
     window.lucide.createIcons();
   }
+
+  // Sinkronisasi data live dari Cloud Database
+  await syncAdminDataFromCloud();
+
+  // Background Auto-Sync data pesanan & menu setiap 4 detik
+  setInterval(async () => {
+    if (adminState.isAuthenticated) {
+      await syncAdminDataFromCloud(false);
+    }
+  }, 4000);
 });
 
 // Otentikasi & Session
@@ -510,7 +522,7 @@ function closeMenuModal() {
   adminState.editingMenuId = null;
 }
 
-function saveMenuItemFromForm(e) {
+async function saveMenuItemFromForm(e) {
   e.preventDefault();
   const name = document.getElementById("formMenuName").value.trim();
   const category = document.getElementById("formMenuCategory").value;
@@ -541,7 +553,7 @@ function saveMenuItemFromForm(e) {
         badgeColor,
         description
       };
-      showToast("Menu berhasil diperbarui!", "success");
+      showToast("Menu berhasil diperbarui & disinkronkan ke Cloud!", "success");
     }
   } else {
     const newId = "kb-" + Date.now().toString().slice(-4);
@@ -559,23 +571,23 @@ function saveMenuItemFromForm(e) {
       description,
       options: {}
     });
-    showToast("Menu baru berhasil ditambahkan!", "success");
+    showToast("Menu baru berhasil ditambahkan & disinkronkan ke Cloud!", "success");
   }
 
-  saveCustomMenu();
   closeMenuModal();
   renderAdminMenuList();
+  await saveCustomMenu();
 }
 
-function deleteMenuItem(menuId) {
+async function deleteMenuItem(menuId) {
   const item = adminState.menu.find(m => m.id === menuId);
   if (!item) return;
 
   if (confirm(`Apakah Anda yakin ingin menghapus menu "${item.name}"?`)) {
     adminState.menu = adminState.menu.filter(m => m.id !== menuId);
-    saveCustomMenu();
     renderAdminMenuList();
     showToast(`Menu "${item.name}" telah dihapus`, "info");
+    await saveCustomMenu();
   }
 }
 
