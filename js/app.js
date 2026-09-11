@@ -866,6 +866,75 @@ function renderCheckoutSummary() {
   }).join("");
 }
 
+// Deteksi Geolocation GPS Pemesan
+function detectCustomerLocation() {
+  const btn = document.getElementById("btnDetectGps");
+  const badge = document.getElementById("customerGpsBadge");
+  const latInput = document.getElementById("customerLat");
+  const lngInput = document.getElementById("customerLng");
+  const addressText = document.getElementById("deliveryAddress");
+
+  if (!navigator.geolocation) {
+    showToast("Fitur GPS tidak didukung di browser ini", "error");
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Mencari titik GPS...</span>`;
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+
+      if (latInput) latInput.value = lat;
+      if (lngInput) lngInput.value = lng;
+      if (badge) badge.classList.remove("hidden");
+
+      if (addressText && !addressText.value.trim()) {
+        addressText.value = `[Lokasi GPS Terdeteksi: ${lat.toFixed(5)}, ${lng.toFixed(5)}] - (Silakan tambahkan nomor rumah / patokan)`;
+      }
+
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600"></i><span class="text-emerald-700">GPS Terkunci</span>`;
+        if (window.lucide) window.lucide.createIcons();
+      }
+
+      showToast("Titik lokasi pengiriman berhasil dideteksi!", "success");
+    },
+    (err) => {
+      console.warn("GPS Error:", err);
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="crosshair" class="w-3.5 h-3.5"></i><span>Gunakan Lokasi GPS Saya</span>`;
+        if (window.lucide) window.lucide.createIcons();
+      }
+      showToast("Gagal mengambil titik GPS. Pastikan izin lokasi aktif.", "error");
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  );
+}
+
+function clearCustomerGps() {
+  const latInput = document.getElementById("customerLat");
+  const lngInput = document.getElementById("customerLng");
+  const badge = document.getElementById("customerGpsBadge");
+  const btn = document.getElementById("btnDetectGps");
+
+  if (latInput) latInput.value = "";
+  if (lngInput) lngInput.value = "";
+  if (badge) badge.classList.add("hidden");
+  if (btn) {
+    btn.innerHTML = `<i data-lucide="crosshair" class="w-3.5 h-3.5"></i><span>Gunakan Lokasi GPS Saya</span>`;
+    if (window.lucide) window.lucide.createIcons();
+  }
+}
+
+
 // Handler Ganti Tipe Order (Delivery / Dine-in / Take Away)
 function onOrderTypeChanged() {
   const type = document.querySelector('input[name="orderType"]:checked')?.value || "delivery";
@@ -897,6 +966,8 @@ function processCheckout(actionType) {
   const deliveryAddress = document.getElementById("deliveryAddress")?.value.trim();
   const deliveryNote = document.getElementById("deliveryNote")?.value.trim();
   const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value || "QRIS";
+  const latVal = parseFloat(document.getElementById("customerLat")?.value);
+  const lngVal = parseFloat(document.getElementById("customerLng")?.value);
 
   // Validasi
   if (!customerName) {
@@ -946,6 +1017,7 @@ function processCheckout(actionType) {
     orderType: orderType === "delivery" ? "Delivery (Antar ke Alamat)" : (orderType === "dine-in" ? `Makan di Tempat (Meja #${tableNumber})` : "Take Away (Bungkus Bawa Pulang)"),
     deliveryAddress: orderType === "delivery" ? deliveryAddress : "-",
     deliveryNote: deliveryNote || "-",
+    coords: (!isNaN(latVal) && !isNaN(lngVal)) ? { lat: latVal, lng: lngVal } : null,
     paymentMethod,
     items: [...state.cart],
     subtotal,
@@ -953,10 +1025,11 @@ function processCheckout(actionType) {
     voucherCode: state.activeVoucher?.code || null,
     shippingFee,
     grandTotal,
-    status: "Menunggu Konfirmasi"
+    status: "Menunggu Konfirmasi",
+    assignedCourier: null
   };
 
-  // Simpan ke riwayat pesanan toko (untuk dashboard admin)
+  // Simpan ke riwayat pesanan toko (untuk dashboard admin & kurir)
   try {
     const existingOrders = JSON.parse(localStorage.getItem("kb_orders_history") || "[]");
     existingOrders.unshift(orderData);
@@ -965,18 +1038,16 @@ function processCheckout(actionType) {
     console.error("Gagal mencatat riwayat pesanan:", e);
   }
 
-
   if (actionType === "whatsapp") {
-    // Generate Pesan WhatsApp
     sendOrderViaWhatsApp(orderData);
     openReceiptModal(orderData);
     closeCheckoutModal();
   } else if (actionType === "receipt") {
-    // Tampilkan Struk / Invoice Digital
     openReceiptModal(orderData);
     closeCheckoutModal();
   }
 }
+
 
 // Buat Format Pesan WhatsApp & Redirect
 function sendOrderViaWhatsApp(order) {
@@ -990,10 +1061,14 @@ function sendOrderViaWhatsApp(order) {
   if (order.deliveryAddress !== "-") {
     message += `📍 *ALAMAT:* ${order.deliveryAddress}\n`;
   }
+  if (order.coords) {
+    message += `🗺️ *TITIK GOOGLE MAPS:* https://www.google.com/maps?q=${order.coords.lat},${order.coords.lng}\n`;
+  }
   if (order.deliveryNote !== "-") {
     message += `📝 *CATATAN PENGIRIMAN:* ${order.deliveryNote}\n`;
   }
   message += `💳 *PEMBAYARAN:* ${order.paymentMethod}\n\n`;
+
 
   message += `*--- DAFTAR PESANAN ---*\n`;
   order.items.forEach((item, i) => {

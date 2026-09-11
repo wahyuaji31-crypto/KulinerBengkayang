@@ -73,6 +73,15 @@
 
         <!-- Header Actions -->
         <div class="flex items-center gap-2 sm:gap-3">
+          <!-- Tombol Portal Driver / Kurir -->
+          <a 
+            href="driver.html" 
+            title="Buka Portal Driver / Kurir Pengantar"
+            class="flex items-center gap-1.5 px-3 py-2 text-slate-700 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition border border-slate-200 text-xs font-bold">
+            <i data-lucide="bike" class="w-4 h-4 text-orange-600"></i>
+            <span class="hidden md:inline">Portal Kurir</span>
+          </a>
+
           <!-- Tombol Login Admin Panel -->
           <a 
             href="admin.html" 
@@ -81,6 +90,7 @@
             <i data-lucide="shield-check" class="w-4 h-4 text-orange-600"></i>
             <span class="hidden sm:inline">Admin Login</span>
           </a>
+
 
           <!-- Tombol Setting Penjual / Admin Cepat -->
           <button 
@@ -633,13 +643,36 @@
           <!-- Section Alamat Pengantaran (Jika Delivery) -->
           <div id="deliveryAddressSection" class="space-y-3 pt-2">
             <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1">Alamat Lengkap Pengiriman *</label>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block text-xs font-semibold text-slate-600">Alamat Lengkap Pengiriman *</label>
+                <button 
+                  type="button" 
+                  onclick="detectCustomerLocation()" 
+                  id="btnDetectGps"
+                  class="inline-flex items-center gap-1 text-[11px] font-bold text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-2.5 py-1 rounded-lg border border-orange-200 transition">
+                  <i data-lucide="crosshair" class="w-3.5 h-3.5"></i>
+                  <span>Gunakan Lokasi GPS Saya</span>
+                </button>
+              </div>
               <textarea 
                 id="deliveryAddress" 
                 rows="2" 
                 placeholder="Jl. Merdeka No. 12, RT 02/03 (Patokan depan minimarket / cat rumah hijau)"
                 class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
               ></textarea>
+              
+              <!-- Indikator GPS Terdeteksi -->
+              <div id="customerGpsBadge" class="hidden mt-2 p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-[11px] flex items-center justify-between">
+                <div class="flex items-center gap-1.5 font-medium">
+                  <i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-600"></i>
+                  <span>Titik GPS tersimpan untuk navigasi kurir GoFood/Grab</span>
+                </div>
+                <button type="button" onclick="clearCustomerGps()" class="text-emerald-700 hover:text-rose-600 p-0.5">
+                  <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+              <input type="hidden" id="customerLat" value="">
+              <input type="hidden" id="customerLng" value="">
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-600 mb-1">Catatan Tambahan untuk Driver / Dapur</label>
@@ -651,6 +684,7 @@
               />
             </div>
           </div>
+
 
           <!-- Section Nomor Meja (Jika Dine-in) -->
           <div id="dineInTableSection" class="hidden pt-2">

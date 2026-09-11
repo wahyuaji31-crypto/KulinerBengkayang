@@ -175,12 +175,21 @@
           </button>
 
           <button 
+            id="tab-btn-couriers" 
+            onclick="switchTab('couriers')"
+            class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition text-left">
+            <i data-lucide="bike" class="w-4 h-4 text-orange-400"></i>
+            <span>Kelola Kurir & Driver</span>
+          </button>
+
+          <button 
             id="tab-btn-settings" 
             onclick="switchTab('settings')"
             class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition text-left">
             <i data-lucide="store" class="w-4 h-4"></i>
             <span>Pengaturan Toko & WA</span>
           </button>
+
 
           <button 
             id="tab-btn-security" 
@@ -195,12 +204,21 @@
       <!-- Sidebar Footer -->
       <div class="p-4 border-t border-slate-800 space-y-2">
         <a 
+          href="driver.html" 
+          target="_blank" 
+          class="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-orange-600/20 hover:bg-orange-600 text-orange-400 hover:text-white text-xs font-bold transition border border-orange-500/30">
+          <i data-lucide="bike" class="w-4 h-4"></i>
+          <span>Buka Portal Driver (Kurir)</span>
+        </a>
+
+        <a 
           href="index.html" 
           target="_blank" 
           class="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition">
           <i data-lucide="external-link" class="w-4 h-4 text-orange-400"></i>
           <span>Lihat Website Toko</span>
         </a>
+
 
         <button 
           onclick="handleLogout()" 
@@ -327,8 +345,39 @@
         </div>
       </div>
 
+      <!-- TAB: KELOLA KURIR & DRIVER -->
+      <div id="tab-content-couriers" class="hidden space-y-6">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Manajemen Pekerja Kurir / Driver</h2>
+            <p class="text-xs text-slate-500">Kelola kurir pengantar makanan terintegrasi radar GPS dan Google Maps.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <a 
+              href="driver.html" 
+              target="_blank" 
+              class="px-4 py-2.5 bg-slate-900 hover:bg-black text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-1.5">
+              <i data-lucide="external-link" class="w-3.5 h-3.5 text-orange-400"></i>
+              <span>Buka Portal Driver GPS</span>
+            </a>
+            <button 
+              onclick="openCourierModal()" 
+              class="px-4 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs rounded-xl shadow-md shadow-orange-500/25 transition flex items-center gap-1.5">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              <span>+ Tambah Kurir Baru</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Couriers Grid -->
+        <div id="adminCouriersList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
       <!-- TAB 4: PENGATURAN TOKO & WHATSAPP -->
       <div id="tab-content-settings" class="hidden space-y-6">
+
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 max-w-3xl">
           <h2 class="text-lg font-bold text-slate-900 mb-1">Pengaturan Informasi Toko & WhatsApp</h2>
           <p class="text-xs text-slate-500 mb-6">Nomor WhatsApp ini adalah tujuan pesan saat pelanggan melakukan checkout.</p>
@@ -511,6 +560,45 @@
       </form>
     </div>
   </div>
+
+  <!-- ==================== MODAL TAMBAH / EDIT KURIR ==================== -->
+  <div id="adminCourierModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl flex flex-col">
+      <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <h3 id="adminCourierModalTitle" class="font-bold text-slate-800 text-base">Tambah Kurir Baru</h3>
+        <button onclick="closeCourierModal()" class="text-slate-400 hover:text-slate-700">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form onsubmit="saveCourierFromForm(event)" class="p-5 space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Lengkap Kurir *</label>
+          <input type="text" id="formCourierName" required placeholder="Contoh: Budi Santoso" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nomor WhatsApp Kurir *</label>
+          <input type="tel" id="formCourierPhone" required placeholder="Contoh: 081234567891" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500 font-mono">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Jenis Kendaraan & Nomor Plat *</label>
+          <input type="text" id="formCourierVehicle" required placeholder="Contoh: Honda Beat • KB 4122 LK" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500">
+        </div>
+
+        <div class="pt-4 border-t border-slate-100 flex justify-end gap-2">
+          <button type="button" onclick="closeCourierModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition">
+            Batal
+          </button>
+          <button type="submit" class="px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs rounded-xl shadow-md transition">
+            Simpan Data Kurir
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
 
   <!-- Toast Notification Container -->
   <div id="adminToastContainer" class="fixed top-6 right-6 z-50 flex flex-col gap-2 pointer-events-none max-w-sm"></div>

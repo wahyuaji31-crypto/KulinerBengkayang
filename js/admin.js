@@ -136,7 +136,7 @@ function loadAdminData() {
     adminState.orders = [];
   }
 
-  // Store Config
+    // Store Config
   try {
     const config = localStorage.getItem("kb_store_config");
     if (config) {
@@ -149,12 +149,29 @@ function loadAdminData() {
   } catch (e) {
     adminState.storeConfig = {};
   }
+
+  // Couriers
+  try {
+    const couriers = localStorage.getItem("kb_couriers_list");
+    if (couriers) {
+      adminState.couriers = JSON.parse(couriers);
+    } else {
+      adminState.couriers = [
+        { id: "cr-01", name: "Budi Santoso", phone: "081234567891", vehicle: "Honda Beat • KB 4122 LK", active: true },
+        { id: "cr-02", name: "Rian Pratama", phone: "081234567892", vehicle: "Yamaha NMAX • KB 5890 XX", active: true },
+        { id: "cr-03", name: "Hendra Wijaya", phone: "081234567893", vehicle: "Honda Vario • KB 2311 AB", active: true }
+      ];
+      localStorage.setItem("kb_couriers_list", JSON.stringify(adminState.couriers));
+    }
+  } catch (e) {
+    adminState.couriers = [];
+  }
 }
 
 // Navigasi Tab Dashboard
 function switchTab(tabId) {
   adminState.activeTab = tabId;
-  const tabs = ["dashboard", "menu", "orders", "settings", "security"];
+  const tabs = ["dashboard", "menu", "orders", "couriers", "settings", "security"];
   
   tabs.forEach(t => {
     const contentEl = document.getElementById(`tab-content-${t}`);
@@ -183,11 +200,13 @@ function switchTab(tabId) {
   if (tabId === "dashboard") renderDashboardStats();
   if (tabId === "menu") renderAdminMenuList();
   if (tabId === "orders") renderAdminOrdersList();
+  if (tabId === "couriers") renderAdminCouriersList();
   if (tabId === "settings") loadStoreSettingsToForm();
   if (tabId === "security") loadSecurityForm();
 
   if (window.lucide) window.lucide.createIcons();
 }
+
 
 // ==================== 1. TAB DASHBOARD STATS ====================
 function renderDashboardStats() {
@@ -517,8 +536,137 @@ function clearAllOrders() {
   }
 }
 
+// ==================== TAB MANAJEMEN KURIR ====================
+function renderAdminCouriersList() {
+  const container = document.getElementById("adminCouriersList");
+  if (!container) return;
+
+  if (adminState.couriers.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-full py-12 text-center text-slate-400 bg-white rounded-2xl border border-dashed border-slate-200">
+        Belum ada pekerja kurir yang terdaftar. Klik <strong>+ Tambah Kurir Baru</strong> untuk mendaftarkan kurir pengantar.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = adminState.couriers.map((c, idx) => `
+    <div class="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-3 flex flex-col justify-between">
+      <div>
+        <div class="flex items-start justify-between gap-2">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-sm">
+              <i data-lucide="bike" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-slate-900 text-sm sm:text-base">${escapeHtml(c.name)}</h4>
+              <p class="text-xs text-slate-400 font-mono">${escapeHtml(c.phone)}</p>
+            </div>
+          </div>
+
+          <button onclick="toggleCourierActive(${idx})" class="px-2.5 py-1 rounded-full text-[10px] font-bold ${
+            c.active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'
+          }">
+            ${c.active ? '● Aktif' : '○ Offline'}
+          </button>
+        </div>
+
+        <div class="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-600 space-y-1">
+          <div class="flex items-center gap-1.5">
+            <i data-lucide="car" class="w-3.5 h-3.5 text-slate-400"></i>
+            <span>${escapeHtml(c.vehicle || "Sepeda Motor")}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+        <a 
+          href="https://api.whatsapp.com/send?phone=${c.phone.replace(/[^0-9]/g, "").replace(/^0/, "62")}" 
+          target="_blank"
+          class="flex-1 py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition">
+          <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+          <span>WA Kurir</span>
+        </a>
+        <button 
+          onclick="deleteCourier(${idx})" 
+          class="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition">
+          <i data-lucide="trash-2" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  `).join("");
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function openCourierModal() {
+  const modal = document.getElementById("adminCourierModal");
+  document.getElementById("formCourierName").value = "";
+  document.getElementById("formCourierPhone").value = "";
+  document.getElementById("formCourierVehicle").value = "";
+
+  modal?.classList.remove("hidden");
+  modal?.classList.add("flex");
+  document.body.classList.add("overflow-hidden");
+}
+
+function closeCourierModal() {
+  const modal = document.getElementById("adminCourierModal");
+  modal?.classList.add("hidden");
+  modal?.classList.remove("flex");
+  document.body.classList.remove("overflow-hidden");
+}
+
+function saveCourierFromForm(e) {
+  e.preventDefault();
+  const name = document.getElementById("formCourierName").value.trim();
+  const phone = document.getElementById("formCourierPhone").value.trim();
+  const vehicle = document.getElementById("formCourierVehicle").value.trim();
+
+  if (!name || !phone) {
+    showToast("Nama dan nomor WhatsApp kurir wajib diisi!", "error");
+    return;
+  }
+
+  const newCourier = {
+    id: "cr-" + Date.now().toString().slice(-4),
+    name,
+    phone,
+    vehicle: vehicle || "Sepeda Motor",
+    active: true
+  };
+
+  adminState.couriers.push(newCourier);
+  localStorage.setItem("kb_couriers_list", JSON.stringify(adminState.couriers));
+  renderAdminCouriersList();
+  closeCourierModal();
+  showToast(`Kurir "${name}" berhasil didaftarkan!`, "success");
+}
+
+function toggleCourierActive(index) {
+  if (adminState.couriers[index]) {
+    adminState.couriers[index].active = !adminState.couriers[index].active;
+    localStorage.setItem("kb_couriers_list", JSON.stringify(adminState.couriers));
+    renderAdminCouriersList();
+    showToast(`Status kurir diperbarui`, "info");
+  }
+}
+
+function deleteCourier(index) {
+  const c = adminState.couriers[index];
+  if (!c) return;
+
+  if (confirm(`Apakah Anda yakin ingin menghapus kurir "${c.name}"?`)) {
+    adminState.couriers.splice(index, 1);
+    localStorage.setItem("kb_couriers_list", JSON.stringify(adminState.couriers));
+    renderAdminCouriersList();
+    showToast(`Kurir "${c.name}" telah dihapus`, "info");
+  }
+}
+
 // ==================== 4. TAB PENGATURAN TOKO ====================
 function loadStoreSettingsToForm() {
+
   const cfg = adminState.storeConfig;
   document.getElementById("setStoreName").value = cfg.storeName || "";
   document.getElementById("setStoreTagline").value = cfg.tagline || "";
