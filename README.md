@@ -19,11 +19,23 @@ Website pemesanan kuliner online modern, cepat, dan responsif yang dilengkapi de
    - Tambah/kurang jumlah porsi secara dinamis.
    - Fitur Kupon Diskon Voucher (`DISKON10`, `GRATISONGKIR`, `HEMAT5K`).
    - Kalkulasi otomatis Subtotal, Diskon, Ongkos Kirim, dan Grand Total.
-4. **Checkout Terpadu (WhatsApp & Invoice Digital)**:
+4. **Halaman Login & Dashboard Admin Terpadu ([`admin.html`](file:///c:/Users/asuspro/Desktop/KulinerBengkayang/admin.html))**:
+   - **Login Admin**: Proteksi akses login dengan username & password.
+     - *Username Default*: `admin`
+     - *Password Default*: `admin123`
+     - *(Dapat diubah kapan saja di tab Keamanan Akun)*.
+   - **Ringkasan Dashboard**: Total menu aktif, total pesanan masuk, dan estimasi omzet pendapatan.
+   - **Kelola Menu Kuliner (CRUD)**: Tambah menu baru, edit nama/harga/foto/deskripsi, hapus menu, atau reset ke menu bawaan.
+   - **Riwayat Pesanan Pelanggan**: Daftar pesanan masuk dari website, pembaruan status pemesanan (*Menunggu, Sedang Dimasak, Sedang Diantar, Selesai, Dibatalkan*), dan hapus riwayat.
+   - **Pengaturan Toko & WhatsApp**: Ubah nomor WhatsApp tujuan checkout, nama toko, alamat, jam operasional, dan ongkos kirim.
+   - **Ganti Password**: Fitur ubah username dan password admin secara mandiri.
+
+5. **Checkout Terpadu (WhatsApp & Invoice Digital)**:
    - Pilihan metode pengantaran: **Delivery (Antar ke Alamat)**, **Dine In (Makan di Tempat)**, dan **Take Away (Bungkus)**.
    - Pilihan metode pembayaran: **QRIS Instant**, **Transfer Bank (BCA / BRI / Mandiri)**, dan **COD / Bayar di Tempat**.
    - **Checkout WhatsApp**: Mengirimkan format teks pesanan yang sangat rapi dan lengkap langsung ke nomor WhatsApp penjual.
    - **Struk Digital / Invoice**: Dilengkapi fitur cetak (*print receipt*) dan scan QRIS interaktif.
+
 5. **Panel Pengaturan Penjual (Admin Quick Setting)**:
    - Tombol roda gigi ⚙️ di pojok kanan atas untuk mengganti nomor WhatsApp penerima pesanan, nama toko, alamat, dan ongkir default tanpa perlu mengubah kode. Data tersimpan di browser (`localStorage`).
 
