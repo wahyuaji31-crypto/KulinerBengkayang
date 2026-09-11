@@ -49,10 +49,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Sinkronisasi data live dari Cloud Database
   await syncDriverDataFromCloud();
 
-  // Refresh otomatis data pesanan & kurir dari Cloud setiap 8 detik
-  setInterval(async () => {
-    await syncDriverDataFromCloud(false);
-  }, 8000);
+  // Dengarkan siaran real-time update pesanan (GunDB WebSockets + BroadcastChannel)
+  if (typeof CloudSync !== "undefined") {
+    CloudSync.on("ORDERS", (orders) => {
+      if (Array.isArray(orders)) {
+        driverState.orders = orders;
+        localStorage.setItem("kb_orders_history", JSON.stringify(orders));
+        renderNearbyOrders();
+        console.log("[PintasFood Driver] Pesanan baru diterima secara Real-Time!");
+      }
+    });
+  }
 
   if (window.lucide) window.lucide.createIcons();
 });

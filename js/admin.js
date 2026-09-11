@@ -40,13 +40,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     showLoginView();
   }
 
-  // Dengarkan siaran real-time update pesanan baru dari website pengunjung (0ms)
-  if (typeof CloudSync !== "undefined" && CloudSync.onUpdate) {
-    CloudSync.onUpdate((data) => {
-      if (data.key === CloudSync.KEYS.ORDERS && Array.isArray(data.value)) {
-        adminState.orders = data.value;
-        localStorage.setItem("kb_orders_history", JSON.stringify(data.value));
+  // Dengarkan siaran real-time update pesanan & menu (GunDB WebSockets + BroadcastChannel)
+  if (typeof CloudSync !== "undefined") {
+    CloudSync.on("ORDERS", (orders) => {
+      if (Array.isArray(orders)) {
+        adminState.orders = orders;
+        localStorage.setItem("kb_orders_history", JSON.stringify(orders));
         if (adminState.activeTab === "orders") renderAdminOrdersList();
+        if (adminState.activeTab === "dashboard") renderDashboardStats();
+      }
+    });
+
+    CloudSync.on("MENU", (menu) => {
+      if (Array.isArray(menu) && menu.length > 0) {
+        adminState.menu = menu;
+        localStorage.setItem("kb_custom_menu", JSON.stringify(menu));
+        if (adminState.activeTab === "menu") renderAdminMenuList();
         if (adminState.activeTab === "dashboard") renderDashboardStats();
       }
     });

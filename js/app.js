@@ -25,16 +25,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   renderMenu();
   updateCartUI();
   
-  // Dengarkan siaran real-time update dari Admin (0ms latency antar tab)
-  if (typeof CloudSync !== "undefined" && CloudSync.onUpdate) {
-    CloudSync.onUpdate((data) => {
-      if (data.key === CloudSync.KEYS.MENU && Array.isArray(data.value)) {
-        state.menu = data.value;
-        localStorage.setItem("kb_custom_menu", JSON.stringify(data.value));
+  // Dengarkan siaran real-time update dari Admin (GunDB WebSockets + BroadcastChannel)
+  if (typeof CloudSync !== "undefined") {
+    CloudSync.on("MENU", (menu) => {
+      if (Array.isArray(menu) && menu.length > 0) {
+        state.menu = menu;
+        localStorage.setItem("kb_custom_menu", JSON.stringify(menu));
         renderMenu();
-        console.log("[CloudSync Live] Menu makanan langsung diperbarui!");
-      } else if (data.key === CloudSync.KEYS.SETTINGS && data.value) {
-        state.storeConfig = { ...state.storeConfig, ...data.value };
+        console.log("[PintasFood Live] Menu makanan langsung diperbarui!");
+      }
+    });
+
+    CloudSync.on("SETTINGS", (settings) => {
+      if (settings && typeof settings === "object") {
+        state.storeConfig = { ...state.storeConfig, ...settings };
         localStorage.setItem("kb_store_config", JSON.stringify(state.storeConfig));
         renderStoreInfo();
       }
