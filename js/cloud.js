@@ -45,7 +45,8 @@ const CloudSync = {
     MENU: "MENU",
     SETTINGS: "SETTINGS",
     ORDERS: "ORDERS",
-    COURIERS: "COURIERS"
+    COURIERS: "COURIERS",
+    MERCHANTS: "MERCHANTS"
   },
 
   listeners: {},
@@ -126,6 +127,18 @@ const CloudSync = {
           } catch (e) {}
         }
       });
+
+      gunNode.get("merchants").on((raw) => {
+        if (raw && typeof raw === "string") {
+          try {
+            const merchants = JSON.parse(raw);
+            if (Array.isArray(merchants)) {
+              localStorage.setItem("kb_merchants_list", JSON.stringify(merchants));
+              this.emit("MERCHANTS", merchants);
+            }
+          } catch (e) {}
+        }
+      });
     }
 
     // 3. Mulai Polling Cloud Data Real-Time
@@ -145,6 +158,7 @@ const CloudSync = {
     if (key === "SETTINGS") return "kb_store_config";
     if (key === "ORDERS") return "kb_orders_history";
     if (key === "COURIERS") return "kb_couriers_list";
+    if (key === "MERCHANTS") return "kb_merchants_list";
     return "kb_" + key.toLowerCase();
   },
 
@@ -201,6 +215,7 @@ const CloudSync = {
         else if (key === "SETTINGS") gunNode.get("settings").put(strVal);
         else if (key === "ORDERS") gunNode.get("orders").put(strVal);
         else if (key === "COURIERS") gunNode.get("couriers").put(strVal);
+        else if (key === "MERCHANTS") gunNode.get("merchants").put(strVal);
       } catch (err) {}
     }
 
@@ -336,6 +351,15 @@ const CloudSync = {
       if (JSON.stringify(cloudData.couriers) !== currentCouriers) {
         localStorage.setItem("kb_couriers_list", JSON.stringify(cloudData.couriers));
         this.emit("COURIERS", cloudData.couriers);
+      }
+    }
+
+    // 5. Sync Merchants / Mitra
+    if (Array.isArray(cloudData.merchants) && cloudData.merchants.length > 0) {
+      const currentMerchants = localStorage.getItem("kb_merchants_list");
+      if (JSON.stringify(cloudData.merchants) !== currentMerchants) {
+        localStorage.setItem("kb_merchants_list", JSON.stringify(cloudData.merchants));
+        this.emit("MERCHANTS", cloudData.merchants);
       }
     }
 

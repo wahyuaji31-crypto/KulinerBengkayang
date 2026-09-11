@@ -14,9 +14,12 @@ const adminState = {
   isAuthenticated: false,
   activeTab: "dashboard",
   menu: [],
+  merchants: [],
   orders: [],
+  couriers: [],
   storeConfig: {},
-  editingMenuId: null
+  editingMenuId: null,
+  editingMerchantId: null
 };
 
 // Format Rupiah
@@ -40,7 +43,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     showLoginView();
   }
 
-  // Dengarkan siaran real-time update pesanan & menu (GunDB WebSockets + BroadcastChannel)
+  // Dengarkan siaran real-time update pesanan, menu & mitra
   if (typeof CloudSync !== "undefined") {
     CloudSync.on("ORDERS", (orders) => {
       if (Array.isArray(orders)) {
@@ -57,6 +60,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         localStorage.setItem("kb_custom_menu", JSON.stringify(menu));
         if (adminState.activeTab === "menu") renderAdminMenuList();
         if (adminState.activeTab === "dashboard") renderDashboardStats();
+      }
+    });
+
+    CloudSync.on("MERCHANTS", (merchants) => {
+      if (Array.isArray(merchants) && merchants.length > 0) {
+        adminState.merchants = merchants;
+        localStorage.setItem("kb_merchants_list", JSON.stringify(merchants));
+        if (adminState.activeTab === "merchants") renderAdminMerchantsList();
+        if (adminState.activeTab === "dashboard") renderDashboardStats();
+        populateMerchantDropdown();
       }
     });
   }
@@ -222,6 +235,21 @@ function loadAdminData() {
     adminState.menu = typeof DEFAULT_MENU_ITEMS !== "undefined" ? [...DEFAULT_MENU_ITEMS] : [];
   }
 
+  // Mitra Kuliner / Merchants
+  try {
+    const customMerchants = localStorage.getItem("kb_merchants_list");
+    if (customMerchants) {
+      const parsed = JSON.parse(customMerchants);
+      adminState.merchants = Array.isArray(parsed) && parsed.length > 0 ? parsed : (typeof DEFAULT_MERCHANTS !== "undefined" ? [...DEFAULT_MERCHANTS] : []);
+    } else if (typeof DEFAULT_MERCHANTS !== "undefined") {
+      adminState.merchants = [...DEFAULT_MERCHANTS];
+    } else {
+      adminState.merchants = [];
+    }
+  } catch (e) {
+    adminState.merchants = typeof DEFAULT_MERCHANTS !== "undefined" ? [...DEFAULT_MERCHANTS] : [];
+  }
+
   // Orders
   try {
     const orders = localStorage.getItem("kb_orders_history");
@@ -282,7 +310,20 @@ async function syncAdminDataFromCloud(showLog = true) {
       }
     }
 
-    // 2. Sync Pesanan dari Cloud
+    // 2. Sync Mitra Kuliner dari Cloud
+    const cloudMerchants = await CloudSync.get(CloudSync.KEYS.MERCHANTS, null);
+    if (cloudMerchants && Array.isArray(cloudMerchants) && cloudMerchants.length > 0) {
+      const isMerchantsDiff = JSON.stringify(adminState.merchants) !== JSON.stringify(cloudMerchants);
+      if (isMerchantsDiff) {
+        adminState.merchants = cloudMerchants;
+        localStorage.setItem("kb_merchants_list", JSON.stringify(cloudMerchants));
+        if (adminState.activeTab === "merchants") renderAdminMerchantsList();
+        if (adminState.activeTab === "dashboard") renderDashboardStats();
+        populateMerchantDropdown();
+      }
+    }
+
+    // 3. Sync Pesanan dari Cloud
     const cloudOrders = await CloudSync.get(CloudSync.KEYS.ORDERS, null);
     if (cloudOrders && Array.isArray(cloudOrders)) {
       const isOrdersDiff = JSON.stringify(adminState.orders) !== JSON.stringify(cloudOrders);
@@ -294,7 +335,7 @@ async function syncAdminDataFromCloud(showLog = true) {
       }
     }
 
-    // 3. Sync Couriers dari Cloud
+    // 4. Sync Couriers dari Cloud
     const cloudCouriers = await CloudSync.get(CloudSync.KEYS.COURIERS, null);
     if (cloudCouriers && Array.isArray(cloudCouriers) && cloudCouriers.length > 0) {
       const isCouriersDiff = JSON.stringify(adminState.couriers) !== JSON.stringify(cloudCouriers);
@@ -305,7 +346,7 @@ async function syncAdminDataFromCloud(showLog = true) {
       }
     }
 
-    // 4. Sync Settings dari Cloud
+    // 5. Sync Settings dari Cloud
     const cloudSettings = await CloudSync.get(CloudSync.KEYS.SETTINGS, null);
     if (cloudSettings && typeof cloudSettings === "object") {
       adminState.storeConfig = { ...adminState.storeConfig, ...cloudSettings };
@@ -321,7 +362,7 @@ async function syncAdminDataFromCloud(showLog = true) {
 // Navigasi Tab Dashboard
 function switchTab(tabId) {
   adminState.activeTab = tabId;
-  const tabs = ["dashboard", "menu", "orders", "couriers", "settings", "security"];
+  const tabs = ["dashboard", "menu", "orders", "couriers", "merchants", "settings", "security"];
   
   tabs.forEach(t => {
     const contentEl = document.getElementById(`tab-content-${t}`);
@@ -351,6 +392,7 @@ function switchTab(tabId) {
   if (tabId === "menu") renderAdminMenuList();
   if (tabId === "orders") renderAdminOrdersList();
   if (tabId === "couriers") renderAdminCouriersList();
+  if (tabId === "merchants") renderAdminMerchantsList();
   if (tabId === "settings") loadStoreSettingsToForm();
   if (tabId === "security") loadSecurityForm();
 
@@ -361,11 +403,13 @@ function switchTab(tabId) {
 // ==================== 1. TAB DASHBOARD STATS ====================
 function renderDashboardStats() {
   const totalMenuEl = document.getElementById("statTotalMenu");
+  const totalMerchantsEl = document.getElementById("statTotalMerchants");
   const totalOrdersEl = document.getElementById("statTotalOrders");
   const totalRevenueEl = document.getElementById("statTotalRevenue");
   const latestOrdersContainer = document.getElementById("dashboardLatestOrders");
 
   if (totalMenuEl) totalMenuEl.textContent = adminState.menu.length;
+  if (totalMerchantsEl) totalMerchantsEl.textContent = adminState.merchants.length;
   if (totalOrdersEl) totalOrdersEl.textContent = adminState.orders.length;
 
   const totalRevenue = adminState.orders.reduce((sum, o) => sum + (o.grandTotal || 0), 0);
@@ -404,6 +448,23 @@ function renderDashboardStats() {
   }
 }
 
+// Helper Dropdown Mitra untuk Form Menu Makanan
+function populateMerchantDropdown(selectedMerchantId = null) {
+  const selectEl = document.getElementById("formMenuMerchant");
+  if (!selectEl) return;
+
+  const merchants = adminState.merchants || [];
+  if (merchants.length === 0) {
+    selectEl.innerHTML = `<option value="">-- Belum ada mitra (Tambah mitra dahulu) --</option>`;
+    return;
+  }
+
+  selectEl.innerHTML = merchants.map((m, idx) => {
+    const isSelected = selectedMerchantId ? (m.id === selectedMerchantId || m.name === selectedMerchantId) : (idx === 0);
+    return `<option value="${m.id}" ${isSelected ? "selected" : ""}>🏪 ${escapeHtml(m.name)} - ${escapeHtml(m.owner || 'Mitra')}</option>`;
+  }).join("");
+}
+
 // ==================== 2. TAB MENU CRUD ====================
 function renderAdminMenuList() {
   const container = document.getElementById("adminMenuList");
@@ -432,7 +493,15 @@ function renderAdminMenuList() {
             <h4 class="font-bold text-slate-800 text-sm sm:text-base line-clamp-1">${escapeHtml(item.name)}</h4>
             ${item.badge ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold text-white ${item.badgeColor || 'bg-orange-500'}">${item.badge}</span>` : ""}
           </div>
+          
+          <!-- Badge Mitra Penyedia -->
+          <div class="flex items-center gap-1.5 text-xs text-orange-600 font-semibold mt-0.5">
+            <i data-lucide="store" class="w-3.5 h-3.5 flex-shrink-0"></i>
+            <span class="truncate">${escapeHtml(item.merchantName || 'PintasFood Kitchen')}</span>
+          </div>
+
           <div class="text-xs text-slate-500 mt-0.5 line-clamp-1">${escapeHtml(item.description)}</div>
+          
           <div class="flex items-center gap-2 mt-1">
             <span class="font-extrabold text-orange-600 text-sm">${formatRupiah(item.price)}</span>
             ${item.originalPrice ? `<span class="text-xs text-slate-400 line-through">${formatRupiah(item.originalPrice)}</span>` : ""}
@@ -480,6 +549,7 @@ function openMenuModal(menuId = null) {
     document.getElementById("formMenuBadge").value = item.badge || "";
     document.getElementById("formMenuBadgeColor").value = item.badgeColor || "bg-orange-500";
     document.getElementById("formMenuDescription").value = item.description;
+    populateMerchantDropdown(item.merchantId);
   } else {
     if (titleEl) titleEl.textContent = "Tambah Menu Baru";
     document.getElementById("formMenuName").value = "";
@@ -490,6 +560,7 @@ function openMenuModal(menuId = null) {
     document.getElementById("formMenuBadge").value = "";
     document.getElementById("formMenuBadgeColor").value = "bg-orange-500";
     document.getElementById("formMenuDescription").value = "";
+    populateMerchantDropdown(null);
   }
 
   modal?.classList.remove("hidden");
@@ -517,6 +588,12 @@ async function saveMenuItemFromForm(e) {
   const badgeColor = document.getElementById("formMenuBadgeColor").value;
   const description = document.getElementById("formMenuDescription").value.trim();
 
+  // Mitra Penyedia
+  const merchantSelect = document.getElementById("formMenuMerchant");
+  const merchantId = merchantSelect?.value || (adminState.merchants[0]?.id || "mitra-01");
+  const selectedMerchant = (adminState.merchants || []).find(m => m.id === merchantId);
+  const merchantName = selectedMerchant ? selectedMerchant.name : (adminState.storeConfig.storeName || "PintasFood Kitchen");
+
   if (!name || isNaN(price)) {
     showToast("Nama menu dan harga wajib diisi dengan benar!", "error");
     return;
@@ -527,6 +604,8 @@ async function saveMenuItemFromForm(e) {
     if (idx > -1) {
       adminState.menu[idx] = {
         ...adminState.menu[idx],
+        merchantId,
+        merchantName,
         name,
         category,
         price,
@@ -542,6 +621,8 @@ async function saveMenuItemFromForm(e) {
     const newId = "kb-" + Date.now().toString().slice(-4);
     adminState.menu.unshift({
       id: newId,
+      merchantId,
+      merchantName,
       name,
       category,
       price,
@@ -837,6 +918,234 @@ async function deleteCourier(index) {
     }
     renderAdminCouriersList();
     showToast(`Kurir "${c.name}" telah dihapus`, "info");
+  }
+}
+
+// ==================== 3.5. TAB KELOLA MITRA KULINER ====================
+function renderAdminMerchantsList() {
+  const container = document.getElementById("adminMerchantsList");
+  if (!container) return;
+
+  const merchants = adminState.merchants || [];
+  if (merchants.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-full py-12 text-center text-slate-400 bg-white rounded-2xl border border-dashed border-slate-200">
+        Belum ada data mitra kuliner. Klik tombol <strong>+ Tambah Mitra Baru</strong> di atas untuk mendaftarkan mitra.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = merchants.map((m, idx) => {
+    const menuCount = (adminState.menu || []).filter(i => i.merchantId === m.id || i.merchantName === m.name).length;
+    const isActive = m.status !== "inactive";
+
+    return `
+      <div class="p-5 bg-white rounded-2xl border ${isActive ? 'border-slate-200' : 'border-slate-200 bg-slate-50 opacity-75'} shadow-sm flex flex-col justify-between group transition">
+        <div>
+          <div class="flex items-start justify-between gap-3 mb-3">
+            <div class="flex items-center gap-3 min-w-0">
+              <img 
+                src="${m.image || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=400&q=80'}" 
+                alt="${escapeHtml(m.name)}" 
+                class="w-14 h-14 rounded-xl object-cover bg-slate-100 flex-shrink-0"
+                onerror="this.src='https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=400&q=80'"
+              />
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <h4 class="font-bold text-slate-900 text-sm sm:text-base line-clamp-1">${escapeHtml(m.name)}</h4>
+                  ${m.badge ? `<span class="px-2 py-0.2 rounded-full text-[10px] font-bold text-white ${m.badgeColor || 'bg-orange-500'}">${escapeHtml(m.badge)}</span>` : ""}
+                </div>
+                <div class="text-xs text-slate-500 mt-0.5 line-clamp-1">👤 ${escapeHtml(m.owner || 'Pemilik')} • ${escapeHtml(m.category || 'Kuliner')}</div>
+              </div>
+            </div>
+
+            <button 
+              onclick="toggleMerchantStatus(${idx})" 
+              title="${isActive ? 'Klik untuk non-aktifkan mitra' : 'Klik untuk aktifkan mitra'}"
+              class="px-2.5 py-1 rounded-full text-[11px] font-bold transition flex-shrink-0 ${
+                isActive ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+              }">
+              ${isActive ? '✓ Aktif' : 'Non-Aktif'}
+            </button>
+          </div>
+
+          <div class="text-xs text-slate-500 mb-3 line-clamp-2">
+            📍 ${escapeHtml(m.address || 'Bengkayang, Kalimantan Barat')}
+          </div>
+
+          <div class="flex items-center gap-4 text-xs font-semibold text-slate-600 mb-4 pt-2 border-t border-slate-100">
+            <span class="flex items-center gap-1">
+              <i data-lucide="utensils" class="w-3.5 h-3.5 text-orange-500"></i>
+              <span>${menuCount} Menu Terdaftar</span>
+            </span>
+            <span class="flex items-center gap-1">
+              <i data-lucide="star" class="w-3.5 h-3.5 fill-amber-400 text-amber-400"></i>
+              <span>${m.rating || '4.9'}</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 pt-3 border-t border-slate-100 mt-auto">
+          <a 
+            href="https://wa.me/${(m.phone || '').replace(/[^0-9]/g, '').replace(/^0/, '62')}" 
+            target="_blank"
+            class="flex-1 py-2 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition">
+            <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+            <span>WA Mitra</span>
+          </a>
+
+          <button 
+            onclick="openMerchantModal('${m.id}')" 
+            class="p-2 bg-slate-100 hover:bg-orange-50 text-slate-600 hover:text-orange-600 rounded-xl text-xs font-bold transition">
+            <i data-lucide="edit-2" class="w-4 h-4"></i>
+          </button>
+
+          <button 
+            onclick="deleteMerchant(${idx})" 
+            class="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function openMerchantModal(merchantId = null) {
+  adminState.editingMerchantId = merchantId;
+  const modal = document.getElementById("adminMerchantModal");
+  const titleEl = document.getElementById("adminMerchantModalTitle");
+
+  if (merchantId) {
+    const m = (adminState.merchants || []).find(item => item.id === merchantId);
+    if (!m) return;
+
+    if (titleEl) titleEl.textContent = "Edit Mitra Kuliner";
+    document.getElementById("formMerchantName").value = m.name || "";
+    document.getElementById("formMerchantOwner").value = m.owner || "";
+    document.getElementById("formMerchantPhone").value = m.phone || "";
+    document.getElementById("formMerchantCategory").value = m.category || "";
+    document.getElementById("formMerchantBadge").value = m.badge || "";
+    document.getElementById("formMerchantAddress").value = m.address || "";
+    document.getElementById("formMerchantImage").value = m.image || "";
+    document.getElementById("formMerchantDescription").value = m.description || "";
+  } else {
+    if (titleEl) titleEl.textContent = "Tambah Mitra Kuliner Baru";
+    document.getElementById("formMerchantName").value = "";
+    document.getElementById("formMerchantOwner").value = "";
+    document.getElementById("formMerchantPhone").value = "";
+    document.getElementById("formMerchantCategory").value = "Makanan Tradisional & Nusantara";
+    document.getElementById("formMerchantBadge").value = "Mitra Resmi";
+    document.getElementById("formMerchantAddress").value = "";
+    document.getElementById("formMerchantImage").value = "";
+    document.getElementById("formMerchantDescription").value = "";
+  }
+
+  modal?.classList.remove("hidden");
+  modal?.classList.add("flex");
+  document.body.classList.add("overflow-hidden");
+}
+
+function closeMerchantModal() {
+  const modal = document.getElementById("adminMerchantModal");
+  modal?.classList.add("hidden");
+  modal?.classList.remove("flex");
+  document.body.classList.remove("overflow-hidden");
+  adminState.editingMerchantId = null;
+}
+
+async function saveMerchantFromForm(e) {
+  if (e && e.preventDefault) e.preventDefault();
+
+  const name = document.getElementById("formMerchantName").value.trim();
+  const owner = document.getElementById("formMerchantOwner").value.trim();
+  const phone = document.getElementById("formMerchantPhone").value.trim();
+  const category = document.getElementById("formMerchantCategory").value.trim();
+  const badge = document.getElementById("formMerchantBadge").value.trim();
+  const address = document.getElementById("formMerchantAddress").value.trim();
+  const image = document.getElementById("formMerchantImage").value.trim() || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80";
+  const description = document.getElementById("formMerchantDescription").value.trim();
+
+  if (!name || !owner || !phone) {
+    showToast("Nama warung, nama pemilik, dan no WhatsApp wajib diisi!", "error");
+    return;
+  }
+
+  if (adminState.editingMerchantId) {
+    const idx = (adminState.merchants || []).findIndex(m => m.id === adminState.editingMerchantId);
+    if (idx > -1) {
+      adminState.merchants[idx] = {
+        ...adminState.merchants[idx],
+        name,
+        owner,
+        phone,
+        category,
+        badge,
+        address,
+        image,
+        description
+      };
+      showToast(`Data mitra "${name}" berhasil diperbarui!`, "success");
+    }
+  } else {
+    const newId = "mitra-" + Date.now().toString().slice(-4);
+    adminState.merchants.push({
+      id: newId,
+      name,
+      owner,
+      phone,
+      category,
+      badge: badge || "Mitra Resmi",
+      badgeColor: "bg-orange-500",
+      address,
+      image,
+      description,
+      rating: 5.0,
+      reviewsCount: 1,
+      status: "active",
+      joinedAt: new Date().toISOString().split("T")[0]
+    });
+    showToast(`Mitra baru "${name}" berhasil ditambahkan!`, "success");
+  }
+
+  closeMerchantModal();
+  renderAdminMerchantsList();
+  renderDashboardStats();
+  populateMerchantDropdown();
+  await saveMerchants();
+}
+
+async function toggleMerchantStatus(index) {
+  if (adminState.merchants && adminState.merchants[index]) {
+    const curr = adminState.merchants[index].status;
+    adminState.merchants[index].status = curr === "inactive" ? "active" : "inactive";
+    renderAdminMerchantsList();
+    showToast(`Status mitra "${adminState.merchants[index].name}" diperbarui`, "info");
+    await saveMerchants();
+  }
+}
+
+async function deleteMerchant(index) {
+  const m = adminState.merchants[index];
+  if (!m) return;
+
+  if (confirm(`Apakah Anda yakin ingin menghapus mitra "${m.name}"?`)) {
+    adminState.merchants.splice(index, 1);
+    renderAdminMerchantsList();
+    renderDashboardStats();
+    populateMerchantDropdown();
+    showToast(`Mitra "${m.name}" telah dihapus`, "info");
+    await saveMerchants();
+  }
+}
+
+async function saveMerchants() {
+  localStorage.setItem("kb_merchants_list", JSON.stringify(adminState.merchants));
+  if (typeof CloudSync !== "undefined") {
+    await CloudSync.set(CloudSync.KEYS.MERCHANTS, adminState.merchants);
   }
 }
 

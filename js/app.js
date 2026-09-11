@@ -6,8 +6,10 @@
 // State Management
 const state = {
   menu: [],
+  merchants: [],
   cart: [],
   activeCategory: "all",
+  activeMerchant: "all",
   searchQuery: "",
   activeVoucher: null,
   storeConfig: null,
@@ -19,9 +21,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   loadStoreConfigLocal();
   loadCart();
   loadMenuDataLocal();
+  loadMerchantsDataLocal();
   initEventListeners();
   renderStoreInfo();
   renderCategoryTabs();
+  renderMerchantFilterTabs();
+  renderMerchants();
   renderMenu();
   updateCartUI();
   
@@ -32,7 +37,19 @@ document.addEventListener("DOMContentLoaded", async () => {
         state.menu = menu;
         localStorage.setItem("kb_custom_menu", JSON.stringify(menu));
         renderMenu();
+        renderMerchants();
         console.log("[PintasFood Live] Menu makanan langsung diperbarui!");
+      }
+    });
+
+    CloudSync.on("MERCHANTS", (merchants) => {
+      if (Array.isArray(merchants) && merchants.length > 0) {
+        state.merchants = merchants;
+        localStorage.setItem("kb_merchants_list", JSON.stringify(merchants));
+        renderMerchants();
+        renderMerchantFilterTabs();
+        renderMenu();
+        console.log("[PintasFood Live] Daftar mitra kuliner diperbarui!");
       }
     });
 
@@ -161,6 +178,23 @@ function loadMenuDataLocal() {
   }
 }
 
+// Load Mitra Kuliner Lokal Cepat
+function loadMerchantsDataLocal() {
+  const savedMerchants = localStorage.getItem("kb_merchants_list");
+  if (savedMerchants) {
+    try {
+      const parsed = JSON.parse(savedMerchants);
+      state.merchants = Array.isArray(parsed) && parsed.length > 0 ? parsed : (typeof DEFAULT_MERCHANTS !== "undefined" ? [...DEFAULT_MERCHANTS] : []);
+    } catch (e) {
+      state.merchants = typeof DEFAULT_MERCHANTS !== "undefined" ? [...DEFAULT_MERCHANTS] : [];
+    }
+  } else if (typeof DEFAULT_MERCHANTS !== "undefined") {
+    state.merchants = [...DEFAULT_MERCHANTS];
+  } else {
+    state.merchants = [];
+  }
+}
+
 // Sinkronisasi Live dari Cloud Database
 async function syncDataFromCloud(showLog = true) {
   if (typeof CloudSync === "undefined") return;
@@ -174,11 +208,26 @@ async function syncDataFromCloud(showLog = true) {
         state.menu = cloudMenu;
         localStorage.setItem("kb_custom_menu", JSON.stringify(cloudMenu));
         renderMenu();
+        renderMerchants();
         if (showLog) console.log("[CloudSync] Menu makanan terbaru berhasil disinkronkan dari Cloud!");
       }
     }
 
-    // 2. Sync Store Config
+    // 2. Sync Mitra Kuliner
+    const cloudMerchants = await CloudSync.get(CloudSync.KEYS.MERCHANTS, null);
+    if (cloudMerchants && Array.isArray(cloudMerchants) && cloudMerchants.length > 0) {
+      const merchantsChanged = JSON.stringify(state.merchants) !== JSON.stringify(cloudMerchants);
+      if (merchantsChanged) {
+        state.merchants = cloudMerchants;
+        localStorage.setItem("kb_merchants_list", JSON.stringify(cloudMerchants));
+        renderMerchants();
+        renderMerchantFilterTabs();
+        renderMenu();
+        if (showLog) console.log("[CloudSync] Daftar mitra kuliner berhasil disinkronkan dari Cloud!");
+      }
+    }
+
+    // 3. Sync Store Config
     const cloudConfig = await CloudSync.get(CloudSync.KEYS.SETTINGS, null);
     if (cloudConfig && typeof cloudConfig === "object" && Object.keys(cloudConfig).length > 0) {
       const configChanged = JSON.stringify(state.storeConfig) !== JSON.stringify(cloudConfig);
@@ -255,6 +304,167 @@ function setCategory(catId) {
   renderMenu();
 }
 
+// Render Filter Bar Toko / Mitra Kuliner
+function renderMerchantFilterTabs() {
+  const container = document.getElementById("merchantFilterTabs");
+  if (!container) return;
+
+  const activeMerchants = (state.merchants || []).filter(m => m.status !== "inactive");
+  
+  // Hitung menu per mitra
+  const allCount = state.menu.length;
+
+  let tabsHtml = `
+    <button 
+      type="button" 
+      onclick="filterByMerchant('all')" 
+      class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap flex items-center gap-1.5 ${
+        state.activeMerchant === "all"
+          ? "bg-orange-600 text-white shadow-sm"
+          : "bg-white text-slate-700 hover:bg-orange-50 border border-slate-200"
+      }">
+      <span>Semua Toko / Mitra</span>
+      <span class="px-1.5 py-0.2 rounded-full text-[10px] ${state.activeMerchant === "all" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"}">${allCount}</span>
+    </button>
+  `;
+
+  activeMerchants.forEach(m => {
+    const isActive = state.activeMerchant === m.id;
+    const mMenuCount = state.menu.filter(i => i.merchantId === m.id || i.merchantName === m.name).length;
+    tabsHtml += `
+      <button 
+        type="button" 
+        onclick="filterByMerchant('${m.id}')" 
+        class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap flex items-center gap-1.5 ${
+          isActive
+            ? "bg-orange-600 text-white shadow-sm"
+            : "bg-white text-slate-700 hover:bg-orange-50 border border-slate-200"
+        }">
+        <i data-lucide="store" class="w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-orange-500'}"></i>
+        <span>${escapeHtml(m.name)}</span>
+        <span class="px-1.5 py-0.2 rounded-full text-[10px] ${isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"}">${mMenuCount}</span>
+      </button>
+    `;
+  });
+
+  container.innerHTML = tabsHtml;
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function filterByMerchant(merchantId) {
+  state.activeMerchant = merchantId;
+  renderMerchantFilterTabs();
+  renderMenu();
+}
+
+// Render Section Mitra Kuliner Pilihan
+function renderMerchants() {
+  const container = document.getElementById("merchantsGrid");
+  if (!container) return;
+
+  const activeMerchants = (state.merchants || []).filter(m => m.status !== "inactive");
+
+  if (activeMerchants.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-full py-12 text-center text-slate-400">
+        Belum ada mitra kuliner yang terdaftar.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = activeMerchants.map(m => {
+    const menuCount = state.menu.filter(i => i.merchantId === m.id || i.merchantName === m.name).length;
+    const badgeColor = m.badgeColor || "bg-orange-500";
+
+    return `
+      <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between group">
+        <div>
+          <!-- Thumbnail Toko Mitra -->
+          <div class="relative h-40 overflow-hidden bg-slate-100">
+            <img 
+              src="${m.image || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80'}" 
+              alt="${escapeHtml(m.name)}" 
+              loading="lazy"
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              onerror="this.src='https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80'"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+            
+            ${m.badge ? `
+              <span class="absolute top-3 left-3 ${badgeColor} text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full shadow-md">
+                ${escapeHtml(m.badge)}
+              </span>
+            ` : ""}
+
+            <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between text-white">
+              <span class="text-xs font-bold bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-lg flex items-center gap-1">
+                <i data-lucide="star" class="w-3.5 h-3.5 fill-amber-400 text-amber-400"></i>
+                <span>${m.rating || '4.9'} (${m.reviewsCount || 50}+)</span>
+              </span>
+              <span class="text-xs font-semibold bg-orange-600/90 px-2 py-0.5 rounded-lg">
+                ${menuCount} Menu Siap
+              </span>
+            </div>
+          </div>
+
+          <!-- Info Toko Mitra -->
+          <div class="p-4 sm:p-5">
+            <div class="text-[11px] font-bold text-orange-600 uppercase tracking-wider mb-1">${escapeHtml(m.category || 'Kuliner')}</div>
+            <h3 class="font-extrabold text-slate-900 text-base sm:text-lg mb-1 group-hover:text-orange-600 transition line-clamp-1">
+              ${escapeHtml(m.name)}
+            </h3>
+            <p class="text-xs text-slate-500 line-clamp-2 mb-3 leading-relaxed">
+              ${escapeHtml(m.description || m.address || 'Mitra resmi kuliner PintasFood Bengkayang.')}
+            </p>
+
+            <div class="flex items-center gap-1.5 text-xs text-slate-400">
+              <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400 flex-shrink-0"></i>
+              <span class="truncate">${escapeHtml(m.address || 'Bengkayang, Kalbar')}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tombol Aksi Mitra -->
+        <div class="p-4 sm:p-5 pt-0 border-t border-slate-50 flex items-center gap-2 mt-auto">
+          <button 
+            type="button" 
+            onclick="viewMerchantMenu('${m.id}')" 
+            class="flex-1 py-2.5 px-3 bg-orange-50 hover:bg-orange-600 text-orange-700 hover:text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 group-btn shadow-sm">
+            <i data-lucide="utensils" class="w-3.5 h-3.5"></i>
+            <span>Lihat Menu Toko</span>
+          </button>
+          
+          ${m.phone ? `
+            <a 
+              href="https://wa.me/${m.phone.replace(/[^0-9]/g, "").replace(/^0/, "62")}" 
+              target="_blank" 
+              title="Hubungi WhatsApp Mitra"
+              class="p-2.5 bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-600 rounded-xl transition border border-slate-200 flex items-center justify-center">
+              <i data-lucide="message-circle" class="w-4 h-4"></i>
+            </a>
+          ` : ""}
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function viewMerchantMenu(merchantId) {
+  state.activeMerchant = merchantId;
+  state.activeCategory = "all";
+  renderMerchantFilterTabs();
+  renderCategoryTabs();
+  renderMenu();
+
+  const menuEl = document.getElementById("menu");
+  if (menuEl) {
+    menuEl.scrollIntoView({ behavior: "smooth" });
+  }
+}
+
 // Render Menu
 function renderMenu() {
   const menuContainer = document.getElementById("menuGrid");
@@ -266,7 +476,14 @@ function renderMenu() {
     const matchesCat = state.activeCategory === "all" || itemNorm === state.activeCategory || item.category === state.activeCategory;
     const matchesQuery = item.name.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
                          item.description.toLowerCase().includes(state.searchQuery.toLowerCase());
-    return matchesCat && matchesQuery;
+    
+    // Filter Mitra
+    let matchesMerchant = true;
+    if (state.activeMerchant !== "all") {
+      matchesMerchant = (item.merchantId === state.activeMerchant) || (item.merchantName && item.merchantName.toLowerCase() === state.activeMerchant.toLowerCase());
+    }
+
+    return matchesCat && matchesQuery && matchesMerchant;
   });
 
   if (countBadge) {
@@ -281,10 +498,10 @@ function renderMenu() {
         </div>
         <h3 class="text-lg font-bold text-slate-800 mb-1">Menu Tidak Ditemukan</h3>
         <p class="text-sm text-slate-500 max-w-md mx-auto">
-          Tidak ada menu yang sesuai dengan kata kunci "<strong>${escapeHtml(state.searchQuery)}</strong>" pada kategori ini.
+          Tidak ada menu yang sesuai dengan filter atau kata kunci pencarian Anda.
         </p>
         <button onclick="resetSearch()" class="mt-4 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-700 transition">
-          Reset Pencarian
+          Reset Filter & Pencarian
         </button>
       </div>
     `;
@@ -326,6 +543,12 @@ function renderMenu() {
 
           <!-- Konten Info -->
           <div class="p-4 sm:p-5">
+            <!-- Badge Mitra Penyedia Makanan -->
+            <div class="flex items-center gap-1.5 text-xs text-slate-500 mb-2">
+              <i data-lucide="store" class="w-3.5 h-3.5 text-orange-500 flex-shrink-0"></i>
+              <span class="font-medium text-slate-700 truncate">${escapeHtml(item.merchantName || 'PintasFood Kitchen')}</span>
+            </div>
+
             <h3 
               onclick="openFoodDetailModal('${item.id}')"
               class="font-bold text-slate-800 text-base sm:text-lg mb-1.5 line-clamp-1 hover:text-orange-600 cursor-pointer transition">
@@ -375,9 +598,66 @@ function renderMenu() {
 
 function resetSearch() {
   state.searchQuery = "";
+  state.activeCategory = "all";
+  state.activeMerchant = "all";
   const searchInput = document.getElementById("searchInput");
   if (searchInput) searchInput.value = "";
+  renderCategoryTabs();
+  renderMerchantFilterTabs();
   renderMenu();
+}
+
+// Modal Pendaftaran Gabung Mitra PintasFood
+function openJoinMitraModal() {
+  const modal = document.getElementById("joinMitraModal");
+  if (modal) {
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+    document.body.classList.add("overflow-hidden");
+  }
+}
+
+function closeJoinMitraModal() {
+  const modal = document.getElementById("joinMitraModal");
+  if (modal) {
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+    document.body.classList.remove("overflow-hidden");
+  }
+}
+
+function handleJoinMitraSubmit(e) {
+  if (e && e.preventDefault) e.preventDefault();
+
+  const name = (document.getElementById("joinMitraName")?.value || "").trim();
+  const owner = (document.getElementById("joinMitraOwner")?.value || "").trim();
+  const phone = (document.getElementById("joinMitraPhone")?.value || "").trim();
+  const category = document.getElementById("joinMitraCategory")?.value || "";
+  const address = (document.getElementById("joinMitraAddress")?.value || "").trim();
+  const menuList = (document.getElementById("joinMitraMenu")?.value || "").trim();
+
+  if (!name || !owner || !phone) {
+    showToast("Harap lengkapi formulir pendaftaran mitra!", "error");
+    return;
+  }
+
+  const targetWa = (state.storeConfig?.whatsappNumber || "6281234567890").replace(/[^0-9]/g, "");
+  
+  const textMsg = `Halo Pengelola PintasFood Bengkayang, saya ingin mendaftar menjadi Mitra Kuliner resmi:%0A%0A` +
+    `🏪 *Nama Usaha/Resto:* ${encodeURIComponent(name)}%0A` +
+    `👤 *Nama Pemilik:* ${encodeURIComponent(owner)}%0A` +
+    `📱 *No. WhatsApp:* ${encodeURIComponent(phone)}%0A` +
+    `📂 *Kategori Kuliner:* ${encodeURIComponent(category)}%0A` +
+    `📍 *Alamat Dapur/Toko:* ${encodeURIComponent(address)}%0A` +
+    `🍲 *Menu yang Siap Dipajang:*%0A${encodeURIComponent(menuList)}%0A%0A` +
+    `Mohon informasi aktivasi dan penayangan menu makanan kami di website PintasFood. Terima kasih!`;
+
+  closeJoinMitraModal();
+  showToast("Membuka WhatsApp untuk mengirim pendaftaran mitra...", "success");
+
+  setTimeout(() => {
+    window.open(`https://wa.me/${targetWa}?text=${textMsg}`, "_blank");
+  }, 500);
 }
 
 // Quick Add to Cart (Default Option)
@@ -597,6 +877,14 @@ function renderFoodDetailModal() {
         <div class="text-right">
           <div class="text-xl font-extrabold text-orange-600">${formatRupiah(detail.price)}</div>
         </div>
+      </div>
+
+      <!-- Info Mitra Penyedia -->
+      <div class="flex items-center gap-2 text-xs font-medium text-slate-600 mb-3 pb-3 border-b border-slate-100">
+        <div class="p-1 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center">
+          <i data-lucide="store" class="w-3.5 h-3.5"></i>
+        </div>
+        <span>Disediakan oleh: <strong class="text-slate-900 font-bold">${escapeHtml(detail.merchantName || 'PintasFood Kitchen')}</strong></span>
       </div>
 
       <p class="text-sm text-slate-600 leading-relaxed mb-6">${escapeHtml(detail.description)}</p>

@@ -1,7 +1,77 @@
-// Data Menu Kuliner Bengkayang & Nusantara
+// Data Mitra Kuliner Resmi PintasFood Bengkayang
+const DEFAULT_MERCHANTS = [
+  {
+    id: "mitra-01",
+    name: "Dapur Nusantara Sebalo",
+    category: "Makanan Tradisional & Nusantara",
+    owner: "Ibu Sri Wahyuni",
+    phone: "081234567801",
+    address: "Jl. Sanggau Ledo No. 12, Bengkayang",
+    rating: 4.9,
+    reviewsCount: 184,
+    image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80",
+    badge: "Mitra Utama",
+    badgeColor: "bg-orange-500",
+    description: "Spesialis masakan nusantara, bubur pedas khas Kalbar, ayam bakar rempah, dan lauk pauk siap saji lezat.",
+    status: "active",
+    joinedAt: "2026-01-10"
+  },
+  {
+    id: "mitra-02",
+    name: "Kedai Mie Tiaw & Kwetiau Pak Amat",
+    category: "Aneka Mie, Kwetiau & Olahan Sapi",
+    owner: "Pak Amat",
+    phone: "081234567802",
+    address: "Jl. Jerendeng AR No. 45, Bengkayang",
+    rating: 4.9,
+    reviewsCount: 235,
+    image: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=600&q=80",
+    badge: "Top Seller",
+    badgeColor: "bg-rose-500",
+    description: "Pakar olahan kwetiau goreng daging sapi, kwetiau siram seafood, dan mie lezat bumbu turun-temurun.",
+    status: "active",
+    joinedAt: "2026-01-15"
+  },
+  {
+    id: "mitra-03",
+    name: "Dapur Kudapan & Choi Pan Kak Lina",
+    category: "Cemilan Khas & Kudapan Tradisional",
+    owner: "Kak Lina",
+    phone: "081234567803",
+    address: "Jl. Basuki Rahmat No. 08, Bengkayang",
+    rating: 4.9,
+    reviewsCount: 274,
+    image: "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=600&q=80",
+    badge: "Favorit Warga",
+    badgeColor: "bg-emerald-600",
+    description: "Kudapan gurih segar, Choi Pan kukus bengkoang kucai, Pengkang bakar, dan roti srikaya pandan lembut.",
+    status: "active",
+    joinedAt: "2026-02-01"
+  },
+  {
+    id: "mitra-04",
+    name: "Kedai Kopi & Minuman Segar Bumi Sebalo",
+    category: "Minuman Segar & Kopi Robusta",
+    owner: "Bang Dimas",
+    phone: "081234567804",
+    address: "Kawasan Pasar Kota Bengkayang",
+    rating: 4.9,
+    reviewsCount: 343,
+    image: "https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=600&q=80",
+    badge: "Minuman Hits",
+    badgeColor: "bg-amber-600",
+    description: "Kopi susu gula aren pekat, es jeruk segar perasan murni Sambas, dan es lidah buaya selasih penyegar dahaga.",
+    status: "active",
+    joinedAt: "2026-02-05"
+  }
+];
+
+// Data Menu Kuliner Bengkayang & Nusantara (Terhubung dengan Mitra Penyedia)
 const DEFAULT_MENU_ITEMS = [
   {
     id: "kb-01",
+    merchantId: "mitra-02",
+    merchantName: "Kedai Mie Tiaw & Kwetiau Pak Amat",
     name: "Mie Tiaw Goreng Spesial Daging Sapi",
     category: "makanan",
     price: 28000,
@@ -23,6 +93,8 @@ const DEFAULT_MENU_ITEMS = [
   },
   {
     id: "kb-02",
+    merchantId: "mitra-01",
+    merchantName: "Dapur Nusantara Sebalo",
     name: "Bubur Pedas Khas Kalbar Komplit",
     category: "makanan",
     price: 22000,
@@ -43,6 +115,8 @@ const DEFAULT_MENU_ITEMS = [
   },
   {
     id: "kb-03",
+    merchantId: "mitra-03",
+    merchantName: "Dapur Kudapan & Choi Pan Kak Lina",
     name: "Choi Pan / Chai Kwe Kukus (Porsi 5 Pcs)",
     category: "cemilan",
     price: 20000,
@@ -63,6 +137,8 @@ const DEFAULT_MENU_ITEMS = [
   },
   {
     id: "kb-04",
+    merchantId: "mitra-01",
+    merchantName: "Dapur Nusantara Sebalo",
     name: "Ayam Bakar Madu Lengkuas + Nasi",
     category: "makanan",
     price: 32000,
@@ -84,6 +160,8 @@ const DEFAULT_MENU_ITEMS = [
   },
   {
     id: "kb-05",
+    merchantId: "mitra-03",
+    merchantName: "Dapur Kudapan & Choi Pan Kak Lina",
     name: "Pengkang Bakar Daun Pisang (3 Pcs)",
     category: "cemilan",
     price: 18000,
@@ -102,6 +180,8 @@ const DEFAULT_MENU_ITEMS = [
   },
   {
     id: "kb-06",
+    merchantId: "mitra-03",
+    merchantName: "Dapur Kudapan & Choi Pan Kak Lina",
     name: "Roti Panggang Srikaya Pandan Asli",
     category: "cemilan",
     price: 15000,
@@ -122,6 +202,8 @@ const DEFAULT_MENU_ITEMS = [
   },
   {
     id: "kb-07",
+    merchantId: "mitra-04",
+    merchantName: "Kedai Kopi & Minuman Segar Bumi Sebalo",
     name: "Es Jeruk Murni Sambas Segar",
     category: "minuman",
     price: 10000,
@@ -139,6 +221,8 @@ const DEFAULT_MENU_ITEMS = [
   },
   {
     id: "kb-08",
+    merchantId: "mitra-04",
+    merchantName: "Kedai Kopi & Minuman Segar Bumi Sebalo",
     name: "Es Lidah Buaya Selasih Lemon",
     category: "minuman",
     price: 12000,
@@ -155,6 +239,8 @@ const DEFAULT_MENU_ITEMS = [
   },
   {
     id: "kb-09",
+    merchantId: "mitra-04",
+    merchantName: "Kedai Kopi & Minuman Segar Bumi Sebalo",
     name: "Kopi Susu Gula Aren Bengkayang",
     category: "minuman",
     price: 14000,
@@ -172,6 +258,8 @@ const DEFAULT_MENU_ITEMS = [
   },
   {
     id: "kb-10",
+    merchantId: "mitra-01",
+    merchantName: "Dapur Nusantara Sebalo",
     name: "Paket Kenyang Berdua (2 Nasi Ayam + 2 Es Jeruk)",
     category: "paket",
     price: 65000,
@@ -188,6 +276,8 @@ const DEFAULT_MENU_ITEMS = [
   },
   {
     id: "kb-11",
+    merchantId: "mitra-03",
+    merchantName: "Dapur Kudapan & Choi Pan Kak Lina",
     name: "Paket Nobar Khas (Choi Pan + Pengkang + 2 Es Teh)",
     category: "paket",
     price: 45000,
@@ -204,6 +294,8 @@ const DEFAULT_MENU_ITEMS = [
   },
   {
     id: "kb-12",
+    merchantId: "mitra-02",
+    merchantName: "Kedai Mie Tiaw & Kwetiau Pak Amat",
     name: "Kwetiau Siram Seafood Telur Puyuh",
     category: "makanan",
     price: 34000,
@@ -224,11 +316,11 @@ const DEFAULT_MENU_ITEMS = [
   }
 ];
 
-// Konfigurasi Default Toko
+// Konfigurasi Default Toko & Platform
 const DEFAULT_STORE_CONFIG = {
   storeName: "PintasFood Bengkayang",
-  tagline: "Pesan Makan Cepat | Bengkayang - Cita Rasa Otentik, Nikmat & Langsung Diantar ke Rumah Anda",
-  whatsappNumber: "6281234567890", // Ganti dengan nomor WA Toko
+  tagline: "Pusat Kuliner & Mitra Usaha Makanan Bengkayang - Cepat, Lezat & Diantar Langsung",
+  whatsappNumber: "6281234567890", // Ganti dengan nomor WA Pengelola PintasFood
   storeAddress: "Jl. Sanggau Ledo No. 45, Bengkayang, Kalimantan Barat",
   openHours: "09:00 - 22:00 WIB",
   deliveryFee: 10000,

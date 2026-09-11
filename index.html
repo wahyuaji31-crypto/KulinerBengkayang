@@ -64,6 +64,10 @@
         <!-- Desktop Navigation -->
         <nav class="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
           <a href="#menu" class="hover:text-orange-600 transition">Daftar Menu</a>
+          <a href="#mitra" class="hover:text-orange-600 transition flex items-center gap-1.5">
+            <i data-lucide="store" class="w-4 h-4 text-orange-600"></i>
+            <span>Mitra Kuliner</span>
+          </a>
           <a href="#promo" class="hover:text-orange-600 transition">Promo Spesial</a>
           <a href="#tentang" class="hover:text-orange-600 transition">Tentang Kami</a>
           <a href="#lokasi" class="hover:text-orange-600 transition">Lokasi & Kontak</a>
@@ -71,6 +75,16 @@
 
         <!-- Header Actions -->
         <div class="flex items-center gap-2 sm:gap-3">
+          <!-- Tombol Gabung Mitra Kuliner -->
+          <button 
+            type="button" 
+            onclick="openJoinMitraModal()" 
+            title="Daftarkan Usaha Kuliner Anda sebagai Mitra PintasFood"
+            class="hidden lg:flex items-center gap-1.5 px-3 py-2 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition border border-emerald-200 text-xs font-bold">
+            <i data-lucide="handshake" class="w-4 h-4 text-emerald-600"></i>
+            <span>Gabung Mitra</span>
+          </button>
+
           <!-- Tombol Portal Driver / Kurir -->
           <a 
             href="driver.html" 
@@ -253,12 +267,42 @@
       </div>
     </section>
 
+    <!-- MITRA KULINER SECTION -->
+    <section id="mitra" class="py-12 sm:py-16 bg-white border-b border-slate-200/80">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+          <div>
+            <div class="inline-flex items-center gap-2 text-xs font-bold text-orange-600 uppercase tracking-widest mb-2">
+              <i data-lucide="store" class="w-4 h-4"></i>
+              <span>Dapur & Resto Terverifikasi</span>
+            </div>
+            <h2 class="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight font-serif-title">
+              Mitra Kuliner Bengkayang
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-500 mt-1">Pilih warung atau dapur kuliner favorit Anda di Bengkayang untuk melihat menu siap saji.</p>
+          </div>
+          <button 
+            type="button" 
+            onclick="openJoinMitraModal()" 
+            class="inline-flex items-center gap-2 px-4 py-2.5 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 rounded-xl text-xs font-bold transition self-start md:self-auto">
+            <i data-lucide="plus-circle" class="w-4 h-4 text-orange-600"></i>
+            <span>Daftarkan Usaha Kuliner Anda</span>
+          </button>
+        </div>
+
+        <!-- Grid Mitra Kuliner -->
+        <div id="merchantsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+    </section>
+
     <!-- MENU SECTION -->
     <section id="menu" class="py-12 sm:py-16">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <!-- Section Header -->
-        <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
           <div>
             <div class="inline-flex items-center gap-2 text-xs font-bold text-orange-600 uppercase tracking-widest mb-2">
               <i data-lucide="sparkles" class="w-4 h-4"></i>
@@ -273,7 +317,18 @@
           </div>
         </div>
 
-        <!-- Search Bar & Filters -->
+        <!-- Filter Mitra Pilihan Dropdown / Bar -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-5 p-3.5 bg-white rounded-2xl border border-slate-200 shadow-sm">
+          <div class="flex items-center gap-2 text-xs font-bold text-slate-700 flex-shrink-0">
+            <i data-lucide="store" class="w-4 h-4 text-orange-600"></i>
+            <span>Pilih Toko / Mitra:</span>
+          </div>
+          <div id="merchantFilterTabs" class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none w-full">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Search Bar & Category Filters -->
         <div class="flex flex-col md:flex-row items-center gap-4 mb-8">
           <!-- Live Search Input -->
           <div class="relative w-full md:w-80">
@@ -297,6 +352,24 @@
           <!-- Rendered by JS -->
         </div>
 
+      </div>
+    </section>
+
+    <!-- BANNER GABUNG MITRA SECTION -->
+    <section class="py-12 bg-gradient-to-r from-orange-600 via-amber-600 to-orange-700 text-white relative overflow-hidden">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="text-center md:text-left space-y-2">
+          <span class="inline-block px-3 py-1 bg-white/20 text-white rounded-full text-xs font-bold uppercase tracking-wider">Peluang Usaha Kuliner Bengkayang</span>
+          <h3 class="text-2xl sm:text-3xl font-extrabold tracking-tight font-serif-title">Punya Usaha Makanan / Minuman di Bengkayang?</h3>
+          <p class="text-sm text-orange-100 max-w-2xl leading-relaxed">Pajang dan jual menu masakan Anda di website PintasFood. Langsung terhubung ke kurir pengantar dan ribuan pelanggan!</p>
+        </div>
+        <button 
+          type="button" 
+          onclick="openJoinMitraModal()" 
+          class="px-6 py-3.5 bg-white text-orange-600 hover:bg-orange-50 active:scale-95 rounded-2xl font-black text-sm shadow-xl transition flex items-center gap-2 flex-shrink-0">
+          <i data-lucide="handshake" class="w-5 h-5 text-orange-600"></i>
+          <span>Gabung Jadi Mitra Sekarang</span>
+        </button>
       </div>
     </section>
 
@@ -832,6 +905,75 @@
           Simpan Perubahan
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL GABUNG JADI MITRA KULINER ==================== -->
+  <div id="joinMitraModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full max-h-[92vh] overflow-y-auto shadow-2xl flex flex-col">
+      <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50 sticky top-0 z-10">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center">
+            <i data-lucide="handshake" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-slate-800 text-base">Pendaftaran Mitra PintasFood</h3>
+            <p class="text-[11px] text-slate-500">Buka usaha kuliner Anda & jangkau pelanggan lebih luas</p>
+          </div>
+        </div>
+        <button onclick="closeJoinMitraModal()" class="text-slate-400 hover:text-slate-700 p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleJoinMitraSubmit(event)" class="p-5 sm:p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Usaha / Warung / Resto *</label>
+          <input type="text" id="joinMitraName" required placeholder="Contoh: Dapur Sedap Bengkayang" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Pemilik / Pengelola *</label>
+            <input type="text" id="joinMitraOwner" required placeholder="Contoh: Ibu Rina" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nomor WhatsApp Aktif *</label>
+            <input type="tel" id="joinMitraPhone" required placeholder="Contoh: 081234567890" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Kategori Usaha Kuliner *</label>
+          <select id="joinMitraCategory" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500">
+            <option value="Makanan Tradisional & Nusantara">Makanan Tradisional & Nusantara</option>
+            <option value="Aneka Mie, Kwetiau & Bakso">Aneka Mie, Kwetiau & Bakso</option>
+            <option value="Cemilan & Kudapan Tradisional">Cemilan & Kudapan Tradisional</option>
+            <option value="Minuman Segar & Kopi">Minuman Segar & Kopi</option>
+            <option value="Kue & Roti Bakery">Kue & Roti Bakery</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Alamat Lengkap Toko / Dapur di Bengkayang *</label>
+          <textarea id="joinMitraAddress" rows="2" required placeholder="Contoh: Jl. Sanggau Ledo No. 25, dekat simpang 4 pasar..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Menu Makanan Unggulan yang Siap Dijual *</label>
+          <textarea id="joinMitraMenu" rows="2" required placeholder="Sebutkan menu makanan yang ingin Anda pajang (misal: Nasi Goreng Kampung, Es Pisang Ijo, dll)..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500"></textarea>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex justify-end gap-2 sticky bottom-0 bg-white">
+          <button type="button" onclick="closeJoinMitraModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition">
+            Batal
+          </button>
+          <button type="submit" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-1.5">
+            <i data-lucide="send" class="w-4 h-4"></i>
+            <span>Kirim Pendaftaran ke WhatsApp Pengelola</span>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
