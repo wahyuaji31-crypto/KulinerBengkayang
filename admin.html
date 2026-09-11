@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - Kuliner Bengkayang</title>
+  
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ea580c'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.4z'/></svg>">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fff7ed',
+              100: '#ffedd5',
+              200: '#fed7aa',
+              300: '#fdba74',
+              400: '#fb923c',
+              500: '#f97316',
+              600: '#ea580c',
+              700: '#c2410c',
+              800: '#9a3412',
+              900: '#7c2d12',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="css/custom.css">
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col justify-between font-sans">
+
+  <!-- ==================== 1. HALAMAN LOGIN ADMIN ==================== -->
+  <section id="loginSection" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-orange-950">
+    <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 sm:p-10 border border-slate-100 relative">
+      
+      <!-- Brand Logo -->
+      <div class="text-center mb-8">
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-orange-600 to-amber-500 text-white flex items-center justify-center mx-auto mb-4 shadow-lg shadow-orange-500/30">
+          <i data-lucide="shield-check" class="w-8 h-8"></i>
+        </div>
+        <h1 class="text-2xl font-black text-slate-900 font-serif-title">Admin Login</h1>
+        <p class="text-xs text-slate-500 mt-1">Panel Pengelolaan Toko Kuliner Bengkayang</p>
+      </div>
+
+      <!-- Alert Error -->
+      <div id="loginError" class="hidden mb-6 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
+        <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0"></i>
+        <span>Username atau password salah!</span>
+      </div>
+
+      <!-- Form Login -->
+      <form onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Username</label>
+          <div class="relative">
+            <i data-lucide="user" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+            <input 
+              type="text" 
+              id="loginUsername" 
+              placeholder="Username Admin" 
+              required
+              class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-slate-50"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Password</label>
+          <div class="relative">
+            <i data-lucide="lock" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+            <input 
+              type="password" 
+              id="loginPassword" 
+              placeholder="••••••••" 
+              required
+              class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-slate-50"
+            />
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between text-xs py-1">
+          <label class="flex items-center gap-2 text-slate-600 cursor-pointer">
+            <input type="checkbox" id="rememberMe" checked class="rounded text-orange-600 focus:ring-orange-500">
+            <span>Ingat saya di perangkat ini</span>
+          </label>
+        </div>
+
+        <button 
+          type="submit" 
+          class="w-full py-3.5 px-4 bg-orange-600 hover:bg-orange-700 active:scale-[0.99] text-white font-bold text-sm rounded-xl shadow-lg shadow-orange-500/30 transition flex items-center justify-center gap-2">
+          <i data-lucide="log-in" class="w-4 h-4"></i>
+          <span>Masuk ke Dashboard</span>
+        </button>
+      </form>
+
+      <!-- Default Credential Hint Box -->
+      <div class="mt-8 p-3.5 rounded-2xl bg-amber-50 border border-amber-200/80 text-xs text-amber-900 space-y-1">
+        <div class="font-bold flex items-center gap-1.5 text-amber-800">
+          <i data-lucide="key" class="w-3.5 h-3.5"></i>
+          <span>Akun Bawaan Default:</span>
+        </div>
+        <div class="grid grid-cols-2 gap-1 font-mono text-[11px] text-amber-950">
+          <div>User: <strong>admin</strong></div>
+          <div>Pass: <strong>admin123</strong></div>
+        </div>
+        <div class="text-[10px] text-amber-700 pt-1 border-t border-amber-200/60">
+          * Anda dapat mengubah username & password kapan saja di tab Keamanan.
+        </div>
+      </div>
+
+      <div class="mt-6 text-center">
+        <a href="index.html" class="text-xs font-semibold text-slate-500 hover:text-orange-600 transition inline-flex items-center gap-1">
+          <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+          <span>Kembali ke Halaman Toko</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 2. DASHBOARD ADMIN UTAMA ==================== -->
+  <div id="dashboardSection" class="hidden min-h-screen flex flex-col md:flex-row">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="w-full md:w-64 bg-slate-900 text-white flex flex-col justify-between flex-shrink-0 shadow-xl">
+      <div>
+        <!-- Sidebar Brand -->
+        <div class="p-5 border-b border-slate-800 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-orange-600 text-white flex items-center justify-center font-bold shadow-md shadow-orange-600/30">
+              <i data-lucide="utensils" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h2 class="font-extrabold text-sm tracking-tight font-serif-title">Admin Kuliner</h2>
+              <p class="text-[11px] text-orange-400 font-medium">Panel Pengelola</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Navigation Links -->
+        <nav class="p-4 space-y-1.5 text-sm font-semibold">
+          <button 
+            id="tab-btn-dashboard" 
+            onclick="switchTab('dashboard')"
+            class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition text-left">
+            <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+            <span>Dashboard</span>
+          </button>
+
+          <button 
+            id="tab-btn-menu" 
+            onclick="switchTab('menu')"
+            class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition text-left">
+            <i data-lucide="utensils-crossed" class="w-4 h-4"></i>
+            <span>Kelola Menu Makanan</span>
+          </button>
+
+          <button 
+            id="tab-btn-orders" 
+            onclick="switchTab('orders')"
+            class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition text-left">
+            <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+            <span>Riwayat Pesanan Masuk</span>
+          </button>
+
+          <button 
+            id="tab-btn-settings" 
+            onclick="switchTab('settings')"
+            class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition text-left">
+            <i data-lucide="store" class="w-4 h-4"></i>
+            <span>Pengaturan Toko & WA</span>
+          </button>
+
+          <button 
+            id="tab-btn-security" 
+            onclick="switchTab('security')"
+            class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition text-left">
+            <i data-lucide="lock" class="w-4 h-4"></i>
+            <span>Ganti Password Admin</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Sidebar Footer -->
+      <div class="p-4 border-t border-slate-800 space-y-2">
+        <a 
+          href="index.html" 
+          target="_blank" 
+          class="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition">
+          <i data-lucide="external-link" class="w-4 h-4 text-orange-400"></i>
+          <span>Lihat Website Toko</span>
+        </a>
+
+        <button 
+          onclick="handleLogout()" 
+          class="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white text-xs font-bold transition">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+          <span>Keluar (Logout)</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Admin Content Area -->
+    <main class="flex-1 p-4 sm:p-8 overflow-y-auto max-h-screen">
+      
+      <!-- Top Bar -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 mb-6 border-b border-slate-200">
+        <div>
+          <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight font-serif-title">Pusat Kendali Toko</h1>
+          <p class="text-xs text-slate-500 mt-0.5">Kelola makanan, harga, pesanan masuk, dan nomor WhatsApp toko Anda secara langsung.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Online & Terhubung
+          </span>
+        </div>
+      </div>
+
+      <!-- TAB 1: DASHBOARD STATS -->
+      <div id="tab-content-dashboard" class="space-y-6">
+        <!-- Stat Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+              <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Menu Aktif</p>
+              <h3 id="statTotalMenu" class="text-3xl font-black text-slate-900 mt-1">0</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center">
+              <i data-lucide="utensils-crossed" class="w-6 h-6"></i>
+            </div>
+          </div>
+
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+              <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Pesanan Masuk</p>
+              <h3 id="statTotalOrders" class="text-3xl font-black text-slate-900 mt-1">0</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center">
+              <i data-lucide="shopping-bag" class="w-6 h-6"></i>
+            </div>
+          </div>
+
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+              <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Estimasi Omzet</p>
+              <h3 id="statTotalRevenue" class="text-2xl font-black text-emerald-600 mt-1">Rp 0</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
+              <i data-lucide="banknote" class="w-6 h-6"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Orders Box -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+          <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+            <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
+              <i data-lucide="clock" class="w-5 h-5 text-orange-600"></i>
+              <span>Pesanan Terbaru yang Masuk</span>
+            </h3>
+            <button onclick="switchTab('orders')" class="text-xs font-bold text-orange-600 hover:underline">Lihat Semua</button>
+          </div>
+          <div id="dashboardLatestOrders" class="space-y-3">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: KELOLA MENU MAKANAN (CRUD) -->
+      <div id="tab-content-menu" class="hidden space-y-6">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Daftar Menu Kuliner</h2>
+            <p class="text-xs text-slate-500">Tambah menu baru, perbarui harga, ganti foto, atau hapus menu.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button 
+              onclick="resetMenuToDefault()" 
+              class="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl transition flex items-center gap-1.5">
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+              <span>Reset Menu Bawaan</span>
+            </button>
+            <button 
+              onclick="openMenuModal()" 
+              class="px-4 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs rounded-xl shadow-md shadow-orange-500/25 transition flex items-center gap-1.5">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              <span>+ Tambah Menu Baru</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Menu List Container -->
+        <div id="adminMenuList" class="space-y-3">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- TAB 3: RIWAYAT PESANAN MASUK -->
+      <div id="tab-content-orders" class="hidden space-y-6">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Daftar Pesanan Masuk</h2>
+            <p class="text-xs text-slate-500">Semua pesanan yang dicheckout pelanggan dari website.</p>
+          </div>
+          <button 
+            onclick="clearAllOrders()" 
+            class="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs rounded-xl transition flex items-center gap-1.5">
+            <i data-lucide="trash" class="w-3.5 h-3.5"></i>
+            <span>Bersihkan Semua Riwayat</span>
+          </button>
+        </div>
+
+        <div id="adminOrdersList" class="space-y-4">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- TAB 4: PENGATURAN TOKO & WHATSAPP -->
+      <div id="tab-content-settings" class="hidden space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 max-w-3xl">
+          <h2 class="text-lg font-bold text-slate-900 mb-1">Pengaturan Informasi Toko & WhatsApp</h2>
+          <p class="text-xs text-slate-500 mb-6">Nomor WhatsApp ini adalah tujuan pesan saat pelanggan melakukan checkout.</p>
+
+          <form onsubmit="saveStoreSettingsFromForm(event)" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Toko *</label>
+                <input type="text" id="setStoreName" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500">
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nomor WhatsApp Penerima Order *</label>
+                <input type="text" id="setStoreWa" required placeholder="6281234567890" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500 font-mono">
+                <span class="text-[10px] text-slate-400">Gunakan format angka dengan kode 62 (contoh: 62812xxx)</span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tagline / Slogan Toko</label>
+              <input type="text" id="setStoreTagline" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Alamat Fisik Toko</label>
+                <input type="text" id="setStoreAddress" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Jam Operasional</label>
+                <input type="text" id="setStoreHours" placeholder="09:00 - 22:00 WIB" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Biaya Ongkir Default (Rp)</label>
+                <input type="number" id="setStoreDeliveryFee" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Min. Belanja Bebas Ongkir (Rp)</label>
+                <input type="number" id="setStoreMinFree" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">URL Gambar QRIS</label>
+              <input type="url" id="setStoreQris" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500">
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 flex justify-end">
+              <button 
+                type="submit" 
+                class="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-orange-500/25 transition flex items-center gap-2">
+                <i data-lucide="save" class="w-4 h-4"></i>
+                <span>Simpan Pengaturan Toko</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- TAB 5: KEAMANAN & GANTI PASSWORD -->
+      <div id="tab-content-security" class="hidden space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 max-w-xl">
+          <h2 class="text-lg font-bold text-slate-900 mb-1">Ganti Password Admin</h2>
+          <p class="text-xs text-slate-500 mb-6">Perbarui username dan password login untuk menjaga keamanan akses dashboard Anda.</p>
+
+          <form onsubmit="saveSecurityCredentials(event)" class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Username Saat Ini</label>
+              <input type="text" id="secCurrentUsername" disabled class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-500 text-sm font-mono">
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Password Lama *</label>
+              <input type="password" id="secOldPassword" required placeholder="Masukkan password lama" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500">
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Username Baru *</label>
+              <input type="text" id="secNewUsername" required placeholder="Username baru" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500 font-mono">
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Password Baru *</label>
+              <input type="password" id="secNewPassword" required placeholder="Password baru" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500">
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 flex justify-end">
+              <button 
+                type="submit" 
+                class="px-6 py-3 bg-slate-900 hover:bg-black text-white font-bold text-sm rounded-xl shadow transition flex items-center gap-2">
+                <i data-lucide="key" class="w-4 h-4"></i>
+                <span>Update Akun Admin</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ==================== MODAL TAMBAH / EDIT MENU ==================== -->
+  <div id="adminMenuModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-xl w-full max-h-[92vh] overflow-y-auto shadow-2xl flex flex-col">
+      <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50 sticky top-0 z-10">
+        <h3 id="adminMenuModalTitle" class="font-bold text-slate-800 text-base">Tambah Menu Baru</h3>
+        <button onclick="closeMenuModal()" class="text-slate-400 hover:text-slate-700">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form onsubmit="saveMenuItemFromForm(event)" class="p-5 sm:p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Makanan / Minuman *</label>
+          <input type="text" id="formMenuName" required placeholder="Contoh: Mie Tiaw Goreng Spesial Sapi" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Kategori *</label>
+            <select id="formMenuCategory" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500">
+              <option value="makanan">Makanan Berat</option>
+              <option value="cemilan">Cemilan & Kudapan</option>
+              <option value="minuman">Minuman Segar</option>
+              <option value="paket">Paket Hemat</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Harga Jual (Rp) *</label>
+            <input type="number" id="formMenuPrice" required placeholder="Contoh: 28000" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Harga Coret / Asli (Opsional)</label>
+            <input type="number" id="formMenuOriginalPrice" placeholder="Contoh: 32000" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500">
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Label / Badge (Opsional)</label>
+            <input type="text" id="formMenuBadge" placeholder="Contoh: Terlaris / Pedas" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Warna Badge</label>
+          <select id="formMenuBadgeColor" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500">
+            <option value="bg-rose-500">Merah (Terlaris)</option>
+            <option value="bg-orange-500">Oranye (Favorit)</option>
+            <option value="bg-emerald-600">Hijau (Wajib Coba)</option>
+            <option value="bg-amber-600">Kuning Keemasan (Khas Daerah)</option>
+            <option value="bg-indigo-600">Ungu (Hemat)</option>
+            <option value="bg-blue-600">Biru (Spesial)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">URL Foto / Gambar Makanan</label>
+          <input type="url" id="formMenuImage" placeholder="https://images.unsplash.com/..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Deskripsi Menu *</label>
+          <textarea id="formMenuDescription" rows="3" required placeholder="Jelaskan kelezatan hidangan, bahan rempah utama, dan kelengkapan porsi..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-orange-500"></textarea>
+        </div>
+
+        <div class="pt-4 border-t border-slate-100 flex justify-end gap-2 sticky bottom-0 bg-white">
+          <button type="button" onclick="closeMenuModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition">
+            Batal
+          </button>
+          <button type="submit" class="px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs rounded-xl shadow-md transition">
+            Simpan Menu
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="adminToastContainer" class="fixed top-6 right-6 z-50 flex flex-col gap-2 pointer-events-none max-w-sm"></div>
+
+  <!-- Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

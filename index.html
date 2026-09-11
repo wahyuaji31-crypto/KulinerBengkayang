@@ -72,14 +72,23 @@
         </nav>
 
         <!-- Header Actions -->
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 sm:gap-3">
+          <!-- Tombol Login Admin Panel -->
+          <a 
+            href="admin.html" 
+            title="Masuk ke Panel Login Admin"
+            class="flex items-center gap-1.5 px-3 py-2 text-slate-700 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition border border-slate-200 text-xs font-bold">
+            <i data-lucide="shield-check" class="w-4 h-4 text-orange-600"></i>
+            <span class="hidden sm:inline">Admin Login</span>
+          </a>
+
           <!-- Tombol Setting Penjual / Admin Cepat -->
           <button 
             type="button"
             onclick="openStoreSettingsModal()" 
-            title="Pengaturan Toko & Nomor WhatsApp"
-            class="p-2.5 text-slate-500 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition border border-slate-200">
-            <i data-lucide="settings" class="w-5 h-5"></i>
+            title="Pengaturan Cepat Toko & Nomor WhatsApp"
+            class="p-2 text-slate-500 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition border border-slate-200">
+            <i data-lucide="settings" class="w-4 h-4"></i>
           </button>
 
           <!-- Tombol Keranjang -->
@@ -414,7 +423,12 @@
           <a href="#home" class="hover:text-orange-600 transition">Beranda</a>
           <a href="#menu" class="hover:text-orange-600 transition">Menu</a>
           <button onclick="openStoreSettingsModal()" class="hover:text-orange-600 transition underline">Kelola Toko</button>
+          <a href="admin.html" class="hover:text-orange-600 transition font-bold text-slate-700 flex items-center gap-1">
+            <i data-lucide="lock" class="w-3.5 h-3.5 text-orange-600"></i>
+            <span>Login Admin</span>
+          </a>
         </div>
+
       </div>
     </div>
   </footer>

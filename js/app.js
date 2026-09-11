@@ -952,8 +952,19 @@ function processCheckout(actionType) {
     discountAmount,
     voucherCode: state.activeVoucher?.code || null,
     shippingFee,
-    grandTotal
+    grandTotal,
+    status: "Menunggu Konfirmasi"
   };
+
+  // Simpan ke riwayat pesanan toko (untuk dashboard admin)
+  try {
+    const existingOrders = JSON.parse(localStorage.getItem("kb_orders_history") || "[]");
+    existingOrders.unshift(orderData);
+    localStorage.setItem("kb_orders_history", JSON.stringify(existingOrders));
+  } catch (e) {
+    console.error("Gagal mencatat riwayat pesanan:", e);
+  }
+
 
   if (actionType === "whatsapp") {
     // Generate Pesan WhatsApp
