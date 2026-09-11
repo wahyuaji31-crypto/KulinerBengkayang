@@ -575,7 +575,11 @@ function deleteMenuItem(menuId) {
     adminState.menu = adminState.menu.filter(m => m.id !== menuId);
     saveCustomMenu();
     renderAdminMenuList();
-    showToast(`Menu "${item.name}" telah dihapus`, "info"function resetMenuToDefault() {
+    showToast(`Menu "${item.name}" telah dihapus`, "info");
+  }
+}
+
+function resetMenuToDefault() {
   if (confirm("Apakah Anda ingin mereset seluruh daftar menu kembali ke menu bawaan?")) {
     localStorage.removeItem("kb_custom_menu");
     if (typeof DEFAULT_MENU_ITEMS !== "undefined") {
@@ -701,9 +705,6 @@ async function clearAllOrders() {
     }
     renderAdminOrdersList();
     showToast("Seluruh riwayat pesanan telah dibersihkan", "info");
-  }
-}
-"info");
   }
 }
 
