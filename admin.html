@@ -54,10 +54,10 @@
         <p class="text-xs text-slate-500 mt-1">Panel Pengelolaan Toko Kuliner Bengkayang</p>
       </div>
 
-      <!-- Alert Error -->
-      <div id="loginError" class="hidden mb-6 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
+      <!-- Alert Error / Success -->
+      <div id="loginError" class="hidden mb-6 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
         <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0"></i>
-        <span>Username atau password salah!</span>
+        <span id="loginErrorText">Username atau password salah!</span>
       </div>
 
       <!-- Form Login -->
@@ -69,9 +69,10 @@
             <input 
               type="text" 
               id="loginUsername" 
+              value="admin"
               placeholder="Username Admin" 
               required
-              class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-slate-50"
+              class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-slate-50 text-slate-800 font-medium"
             />
           </div>
         </div>
@@ -83,10 +84,17 @@
             <input 
               type="password" 
               id="loginPassword" 
+              value="admin123"
               placeholder="••••••••" 
               required
-              class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-slate-50"
+              class="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-slate-50 text-slate-800 font-medium"
             />
+            <button 
+              type="button" 
+              onclick="togglePasswordVisibility()" 
+              class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1">
+              <i data-lucide="eye" id="eyeIcon" class="w-4 h-4"></i>
+            </button>
           </div>
         </div>
 
@@ -99,24 +107,36 @@
 
         <button 
           type="submit" 
+          id="btnLoginSubmit"
           class="w-full py-3.5 px-4 bg-orange-600 hover:bg-orange-700 active:scale-[0.99] text-white font-bold text-sm rounded-xl shadow-lg shadow-orange-500/30 transition flex items-center justify-center gap-2">
           <i data-lucide="log-in" class="w-4 h-4"></i>
           <span>Masuk ke Dashboard</span>
         </button>
       </form>
 
-      <!-- Default Credential Hint Box -->
-      <div class="mt-8 p-3.5 rounded-2xl bg-amber-50 border border-amber-200/80 text-xs text-amber-900 space-y-1">
-        <div class="font-bold flex items-center gap-1.5 text-amber-800">
-          <i data-lucide="key" class="w-3.5 h-3.5"></i>
-          <span>Akun Bawaan Default:</span>
+      <!-- Default Credential Hint Box & Auto Fill Action -->
+      <div class="mt-6 p-4 rounded-2xl bg-amber-50 border border-amber-200/80 text-xs text-amber-900 space-y-2.5">
+        <div class="font-bold flex items-center justify-between text-amber-800">
+          <span class="flex items-center gap-1.5">
+            <i data-lucide="key" class="w-3.5 h-3.5"></i>
+            <span>Akun Bawaan Default:</span>
+          </span>
+          <button 
+            type="button" 
+            onclick="fillDefaultLogin()" 
+            class="px-2.5 py-1 bg-amber-200/70 hover:bg-amber-300 text-amber-900 font-bold rounded-lg text-[10px] transition">
+            Isi Otomatis
+          </button>
         </div>
-        <div class="grid grid-cols-2 gap-1 font-mono text-[11px] text-amber-950">
-          <div>User: <strong>admin</strong></div>
-          <div>Pass: <strong>admin123</strong></div>
+        <div class="grid grid-cols-2 gap-2 font-mono text-xs bg-white/80 p-2 rounded-xl border border-amber-200/50">
+          <div>User: <strong class="text-slate-900">admin</strong></div>
+          <div>Pass: <strong class="text-slate-900">admin123</strong></div>
         </div>
-        <div class="text-[10px] text-amber-700 pt-1 border-t border-amber-200/60">
-          * Anda dapat mengubah username & password kapan saja di tab Keamanan.
+        <div class="flex items-center justify-between text-[11px] text-amber-800 pt-1 border-t border-amber-200/60">
+          <span>Lupa password custom?</span>
+          <button type="button" onclick="resetAdminPassword()" class="font-bold underline hover:text-orange-700">
+            Reset Password
+          </button>
         </div>
       </div>
 
@@ -128,6 +148,7 @@
       </div>
     </div>
   </section>
+
 
   <!-- ==================== 2. DASHBOARD ADMIN UTAMA ==================== -->
   <div id="dashboardSection" class="hidden min-h-screen flex flex-col md:flex-row">

@@ -63,38 +63,88 @@ function initAdminAuth() {
   }
 }
 
+// Toggle Visibility Password
+function togglePasswordVisibility() {
+  const passInput = document.getElementById("loginPassword");
+  const eyeIcon = document.getElementById("eyeIcon");
+  if (!passInput) return;
+
+  if (passInput.type === "password") {
+    passInput.type = "text";
+    eyeIcon?.setAttribute("data-lucide", "eye-off");
+  } else {
+    passInput.type = "password";
+    eyeIcon?.setAttribute("data-lucide", "eye");
+  }
+  if (window.lucide) window.lucide.createIcons();
+}
+
+// Auto-fill Default Kredensial
+function fillDefaultLogin() {
+  const userEl = document.getElementById("loginUsername");
+  const passEl = document.getElementById("loginPassword");
+  const errorEl = document.getElementById("loginError");
+  if (userEl) userEl.value = "admin";
+  if (passEl) passEl.value = "admin123";
+  if (errorEl) errorEl.classList.add("hidden");
+  showToast("Kredensial bawaan telah diisi!", "info");
+}
+
+// Reset Password Admin jika lupa
+function resetAdminPassword() {
+  if (confirm("Apakah Anda ingin mereset password Admin kembali ke bawaan (admin123)?")) {
+    localStorage.removeItem("kb_admin_credentials");
+    fillDefaultLogin();
+    showToast("Password admin berhasil direset ke 'admin123'", "success");
+  }
+}
+
 function handleLogin(e) {
-  e.preventDefault();
+  if (e) e.preventDefault();
   const userEl = document.getElementById("loginUsername");
   const passEl = document.getElementById("loginPassword");
   const rememberEl = document.getElementById("rememberMe");
   const errorEl = document.getElementById("loginError");
+  const errorTextEl = document.getElementById("loginErrorText");
 
-  const username = userEl.value.trim();
-  const password = passEl.value.trim();
+  const username = (userEl?.value || "").trim();
+  const password = (passEl?.value || "").trim();
 
   // Ambil data admin dari storage atau default
-  let savedAdmin = DEFAULT_ADMIN;
+  let savedAdmin = { ...DEFAULT_ADMIN };
   try {
     const raw = localStorage.getItem("kb_admin_credentials");
-    if (raw) savedAdmin = JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.username && parsed.password) {
+        savedAdmin = parsed;
+      }
+    }
   } catch (err) {
-    savedAdmin = DEFAULT_ADMIN;
+    savedAdmin = { ...DEFAULT_ADMIN };
   }
 
-  if (username === savedAdmin.username && password === savedAdmin.password) {
+  // Pengecekan Kredensial:
+  // 1. Cocok dengan savedAdmin (case-insensitive username)
+  // 2. ATAU cocok dengan master default (admin / admin123)
+  const isCustomMatch = (username.toLowerCase() === savedAdmin.username.toLowerCase()) && (password === savedAdmin.password);
+  const isMasterMatch = (username.toLowerCase() === DEFAULT_ADMIN.username.toLowerCase()) && (password === DEFAULT_ADMIN.password);
+
+  if (isCustomMatch || isMasterMatch) {
     adminState.isAuthenticated = true;
     if (rememberEl && rememberEl.checked) {
       localStorage.setItem("kb_admin_auth", "true");
     } else {
       sessionStorage.setItem("kb_admin_auth", "true");
     }
-    errorEl.classList.add("hidden");
+    
+    if (errorEl) errorEl.classList.add("hidden");
     showToast("Login berhasil! Selamat datang Admin.", "success");
     showDashboardView();
   } else {
-    errorEl.classList.remove("hidden");
-    errorEl.textContent = "Username atau password yang Anda masukkan salah!";
+    if (errorEl) errorEl.classList.remove("hidden");
+    if (errorTextEl) errorTextEl.textContent = "Username atau password salah! Gunakan user: admin | pass: admin123";
+    showToast("Gagal masuk. Periksa kembali username & password!", "error");
   }
 }
 
@@ -118,9 +168,14 @@ function showLoginView() {
 function showDashboardView() {
   document.getElementById("loginSection")?.classList.add("hidden");
   document.getElementById("dashboardSection")?.classList.remove("hidden");
-  loadAdminData();
-  switchTab(adminState.activeTab || "dashboard");
+  try {
+    loadAdminData();
+    switchTab(adminState.activeTab || "dashboard");
+  } catch (err) {
+    console.error("Error saat membuka dashboard:", err);
+  }
 }
+
 
 // Load Data Menu & Pesanan
 function loadAdminData() {
