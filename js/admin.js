@@ -91,36 +91,6 @@ function togglePasswordVisibility() {
   if (window.lucide) window.lucide.createIcons();
 }
 
-// Auto-fill Default Kredensial
-function fillDefaultLogin() {
-  const userEl = document.getElementById("loginUsername");
-  const passEl = document.getElementById("loginPassword");
-  const errorEl = document.getElementById("loginError");
-  if (userEl) userEl.value = "admin";
-  if (passEl) passEl.value = "admin123";
-  if (errorEl) errorEl.classList.add("hidden");
-  showToast("Kredensial bawaan telah diisi!", "info");
-}
-
-// Reset Password Admin jika lupa
-function resetAdminPassword() {
-  if (confirm("Apakah Anda ingin mereset password Admin kembali ke bawaan (admin123)?")) {
-    localStorage.removeItem("kb_admin_credentials");
-    fillDefaultLogin();
-    showToast("Password admin berhasil direset ke 'admin123'", "success");
-  }
-}
-
-// Bypass Langsung 1-Klik Masuk Admin
-function directAdminBypass() {
-  fillDefaultLogin();
-  adminState.isAuthenticated = true;
-  localStorage.setItem("kb_admin_auth", "true");
-  sessionStorage.setItem("kb_admin_auth", "true");
-  showToast("Akses instan berhasil! Masuk sebagai Administrator...", "success");
-  showDashboardView();
-}
-
 function handleLogin(e) {
   if (e && e.preventDefault) e.preventDefault();
   const userEl = document.getElementById("loginUsername");
@@ -131,6 +101,13 @@ function handleLogin(e) {
 
   const username = (userEl?.value || "").trim();
   const password = (passEl?.value || "").trim();
+
+  if (!username || !password) {
+    if (errorEl) errorEl.classList.remove("hidden");
+    if (errorTextEl) errorTextEl.textContent = "Username dan password wajib diisi!";
+    showToast("Harap masukkan username dan password!", "error");
+    return;
+  }
 
   // Ambil data admin dari storage atau default
   let savedAdmin = { ...DEFAULT_ADMIN };
@@ -152,7 +129,7 @@ function handleLogin(e) {
   const isCustomMatch = (username.toLowerCase() === savedAdmin.username.toLowerCase()) && (password === savedAdmin.password);
   const isMasterMatch = (username.toLowerCase() === DEFAULT_ADMIN.username.toLowerCase()) && (password === DEFAULT_ADMIN.password);
 
-  if (isCustomMatch || isMasterMatch || (username === "" && password === "")) {
+  if (isCustomMatch || isMasterMatch) {
     adminState.isAuthenticated = true;
     if (rememberEl && rememberEl.checked) {
       localStorage.setItem("kb_admin_auth", "true");
@@ -165,16 +142,13 @@ function handleLogin(e) {
     showDashboardView();
   } else {
     if (errorEl) errorEl.classList.remove("hidden");
-    if (errorTextEl) errorTextEl.textContent = "Username atau password salah! Gunakan user: admin | pass: admin123";
-    showToast("Gagal masuk. Periksa kembali username & password!", "error");
+    if (errorTextEl) errorTextEl.textContent = "Username atau password salah! Akses ditolak.";
+    showToast("Gagal masuk. Username atau password salah!", "error");
   }
 }
 
 // Bind fungsi ke window agar selalu dapat dipanggil dari inline HTML
 window.handleLogin = handleLogin;
-window.directAdminBypass = directAdminBypass;
-window.fillDefaultLogin = fillDefaultLogin;
-window.resetAdminPassword = resetAdminPassword;
 window.togglePasswordVisibility = togglePasswordVisibility;
 
 
